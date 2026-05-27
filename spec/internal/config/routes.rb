@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
-  # Routes added in Task 7 when the Renderable concern needs a host controller
-  # to mount under.
+  get "renderable_test/pdf_attachment", to: "renderable_test#pdf_attachment"
+  get "renderable_test/preview",        to: "renderable_test#preview"
+  get "renderable_test/redirect_doc",   to: "renderable_test#redirect_doc"
 end
