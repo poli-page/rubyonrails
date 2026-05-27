@@ -1,0 +1,82 @@
+name: CI
+on:
+  push:
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ['3.1', '3.2', '3.3', '3.4']
+        rails: ['7.0', '7.1', '7.2', '8.0']
+        exclude:
+          - ruby: '3.1'
+            rails: '8.0'   # Rails 8 requires Ruby >= 3.2
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: rails }
+      - uses: actions/checkout@v4
+        with:
+          repository: poli-page/sdk-ruby
+          path: sdk-ruby
+          ref: main
+        continue-on-error: true
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+          working-directory: rails
+      - name: Pin Rails via Appraisal
+        working-directory: rails
+        run: |
+          if [ -f Appraisals ]; then
+            bundle exec appraisal "rails-${{ matrix.rails }}" install
+          else
+            echo "Skipping appraisal: no Appraisals yet"
+          fi
+      - name: Lint
+        working-directory: rails
+        run: |
+          if [ -f .rubocop.yml ]; then
+            bundle exec rubocop
+          else
+            echo "Skipping lint: no .rubocop.yml yet"
+          fi
+      - name: Specs
+        working-directory: rails
+        run: |
+          if [ -d spec ] && compgen -G "spec/**/*_spec.rb" > /dev/null; then
+            bundle exec appraisal "rails-${{ matrix.rails }}" rspec --exclude-pattern "spec/integration/**/*"
+          else
+            echo "Skipping specs: no *_spec.rb yet"
+          fi
+
+  integration:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: rails }
+      - uses: actions/checkout@v4
+        with:
+          repository: poli-page/sdk-ruby
+          path: sdk-ruby
+          ref: main
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: rails
+      - name: Integration spec against develop API
+        working-directory: rails
+        env:
+          POLI_PAGE_API_KEY: ${{ secrets.POLI_PAGE_DEVELOP_API_KEY }}
+        run: |
+          if [ -d spec/integration ] && compgen -G "spec/integration/*_spec.rb" > /dev/null; then
+            bundle exec rspec spec/integration
+          else
+            echo "Skipping integration spec: no spec/integration yet"
+          fi

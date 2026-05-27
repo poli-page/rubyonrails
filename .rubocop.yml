@@ -1,0 +1,76 @@
+plugins:
+  - rubocop-rails
+  - rubocop-rspec
+  - rubocop-performance
+
+AllCops:
+  NewCops: enable
+  SuggestExtensions: false
+  TargetRubyVersion: 3.2
+  TargetRailsVersion: 7.0
+  Exclude:
+    - "vendor/**/*"
+    - "tmp/**/*"
+    - "gemfiles/**/*"
+    - "example-app/db/schema.rb"
+    - "spec/internal/**/*"
+
+# Double-quoted strings are the dominant convention in modern Ruby SDKs
+# (anthropic-sdk-ruby, stripe-ruby, openai-ruby) and match the sibling
+# poli-page SDK at ../sdk-ruby/.
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Style/StringLiteralsInInterpolation:
+  EnforcedStyle: double_quotes
+
+Style/Documentation:
+  Enabled: false
+
+# Allow both standard and table-aligned hash rocket / colon styles. The
+# gemspec metadata hash uses table alignment for readability.
+Layout/HashAlignment:
+  EnforcedHashRocketStyle:
+    - key
+    - table
+  EnforcedColonStyle:
+    - key
+    - table
+
+# Table-aligned dependency declarations (gemspec, Gemfile) intentionally use
+# extra spacing for readability.
+Layout/ExtraSpacing:
+  AllowForAlignment: true
+
+Layout/LineLength:
+  Max: 120
+
+# The top-level entry file `lib/poli_page-rails.rb` uses a dash to match the
+# gem name (Bundler convention: gem file name == gem name). The Ruby module
+# namespace is still PoliPage::Rails.
+Naming/FileName:
+  Exclude:
+    - "lib/poli_page-rails.rb"
+
+# Group Gemfile entries logically (runtime first, then dev/test families),
+# not strictly alphabetically.
+Bundler/OrderedGems:
+  Enabled: false
+
+# Gemspec dependencies are grouped by role (SDK, then Rails components).
+Gemspec/OrderedDependencies:
+  Enabled: false
+
+Metrics/BlockLength:
+  Exclude:
+    - "spec/**/*"
+    - "*.gemspec"
+
+RSpec/ExampleLength:
+  Max: 20
+
+RSpec/MultipleExpectations:
+  Max: 5
+
+Rails/ApplicationController:
+  Enabled: false  # Engine specs use combustion's bare ApplicationController
