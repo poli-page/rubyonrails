@@ -1,0 +1,39 @@
+# frozen_string_literal: true
+
+# Configuration for the poli_page-rails gem (https://poli.page).
+#
+# Set POLI_PAGE_API_KEY in your environment, then customise below as needed.
+# Get a key at https://app.poli.page/settings/api-keys.
+
+Rails.application.config.poli_page.tap do |c|
+  c.api_key = ENV.fetch("POLI_PAGE_API_KEY")
+
+  # Optional — defaults to https://api.poli.page (the SDK applies its default
+  # when this is nil). Use https://api-develop.poli.page for the develop env.
+  c.base_url = ENV["POLI_PAGE_BASE_URL"] if ENV["POLI_PAGE_BASE_URL"]
+
+  # Optional — request timeout in seconds (Float). SDK default applies when nil.
+  # c.timeout = 30.0
+
+  # Optional — retry policy. SDK defaults apply when nil.
+  # c.max_retries = 3
+  # c.retry_delay = 0.5
+
+  # Optional — pass any Logger-compatible instance. Defaults to Rails.logger.
+  # c.logger = Rails.logger
+
+  # Optional — corporate-egress controls. Honoured by Net::HTTP via the SDK.
+  # c.proxy   = ENV["POLI_PAGE_HTTP_PROXY"]
+  # c.ca_file = ENV["POLI_PAGE_CA_FILE"]
+  # c.ca_path = ENV["POLI_PAGE_CA_PATH"]
+
+  # Optional — set to false to disable the ActiveSupport::Notifications bridge.
+  # The bridge is default-on; it costs nothing when no subscribers attach.
+  # c.notifications = false
+
+  # Optional — custom retry/error callables. Setting these REPLACES the
+  # ActiveSupport::Notifications bridge entirely. To preserve the bridge AND
+  # add custom behaviour, subscribe to AS::Notifications instead.
+  # c.on_retry = ->(event) { Rails.logger.warn("retry: #{event.attempt}") }
+  # c.on_error = ->(err)   { Sentry.capture_exception(err) }
+end
