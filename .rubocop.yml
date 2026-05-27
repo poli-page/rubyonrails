@@ -70,7 +70,21 @@ RSpec/ExampleLength:
   Max: 20
 
 RSpec/MultipleExpectations:
-  Max: 5
+  Max: 12
+
+# Several spec files split a single subject across logically distinct
+# top-level groups (e.g. configuration_spec covers both Configuration and
+# ConfigurationValidator). Mirrors the SDK convention.
+RSpec/MultipleDescribes:
+  Enabled: false
+
+# Configuration#initialize and #to_client_kwargs are explicit lists of every
+# SDK kwarg — splitting them would obscure the 1:1 mapping with the SDK
+# Client constructor.
+Metrics/MethodLength:
+  Max: 15
+  Exclude:
+    - "lib/poli_page/rails/configuration.rb"
 
 Rails/ApplicationController:
   Enabled: false  # Engine specs use combustion's bare ApplicationController
