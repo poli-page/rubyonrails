@@ -6,6 +6,12 @@
 class DocumentsController < ApplicationController
   skip_forgery_protection
 
+  # All Poli Page errors surface as JSON with the SDK's typed code +
+  # request_id, instead of a 500 HTML error page. Same shape the demo UI
+  # JS already knows how to render. Demo-only: a real app would handle
+  # PermissionDeniedError, NotFoundError, etc. separately.
+  rescue_from PoliPage::Error, with: :render_poli_page_error
+
   # GET /api/documents/:id  — SDK demo step 6
   def show
     descriptor = PoliPage.client.documents.get(params[:id])
@@ -41,8 +47,17 @@ class DocumentsController < ApplicationController
       project: "getting-started", template: "welcome",
       version: "not-a-valid-semver", data: {}
     )
-  rescue PoliPage::ValidationError => e
-    render json: { error: e.class.name, code: e.code, message: e.message,
-                   status: e.status, request_id: e.request_id }, status: :bad_request
+  end
+
+  private
+
+  def render_poli_page_error(err)
+    render json: {
+      error:      err.class.name,
+      code:       err.code,
+      message:    err.message,
+      status:     err.status,
+      request_id: err.request_id
+    }, status: (err.status || 500)
   end
 end
