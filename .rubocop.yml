@@ -78,6 +78,12 @@ RSpec/MultipleExpectations:
 RSpec/MultipleDescribes:
   Enabled: false
 
+# Spec file paths mirror lib/ organisation, not the full describe string
+# (e.g. client_spec.rb tests `PoliPage.client (lazy memoised accessor)`).
+# Mirrors the SDK convention.
+RSpec/SpecFilePathFormat:
+  Enabled: false
+
 # Configuration#initialize and #to_client_kwargs are explicit lists of every
 # SDK kwarg — splitting them would obscure the 1:1 mapping with the SDK
 # Client constructor.
