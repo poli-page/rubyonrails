@@ -4,6 +4,8 @@
 # controller demonstrates direct PoliPage.client use to show both styles
 # work (spec §14.4).
 class DocumentsController < ApplicationController
+  skip_forgery_protection
+
   # GET /api/documents/:id  — SDK demo step 6
   def show
     descriptor = PoliPage.client.documents.get(params[:id])

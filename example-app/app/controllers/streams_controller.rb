@@ -8,6 +8,8 @@
 class StreamsController < ApplicationController
   include ActionController::Live
 
+  skip_forgery_protection
+
   # GET /api/render/stream  — SDK demo step 2
   def stream
     response.headers["Content-Type"]           = "application/pdf"

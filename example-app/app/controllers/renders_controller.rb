@@ -6,6 +6,11 @@
 class RendersController < ApplicationController
   include PoliPage::Rails::Renderable
 
+  # JSON / binary API surface — no HTML forms here. Same-origin fetches from
+  # the demo UI don't send the CSRF token; for a true public JSON API we'd
+  # use signed JWTs anyway. Skip the framework-default CSRF check.
+  skip_forgery_protection
+
   # GET /api/render/pdf  — SDK demo step 1
   def pdf
     bytes = PoliPage.client.render.pdf(**canonical_kwargs)
