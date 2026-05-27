@@ -79,13 +79,11 @@ RSpec.describe PoliPage, ".client (lazy memoised accessor)" do
       expect(Rails.application.config.poli_page.logger).to eq(Rails.logger)
     end
 
-    it "installs the notifications retry bridge by default",
-       pending: "wired in Task 8 (ActiveSupport::Notifications bridge)" do
+    it "installs the notifications retry bridge by default" do
       expect(Rails.application.config.poli_page.on_retry).to respond_to(:call)
     end
 
-    it "installs the notifications error bridge by default",
-       pending: "wired in Task 8 (ActiveSupport::Notifications bridge)" do
+    it "installs the notifications error bridge by default" do
       expect(Rails.application.config.poli_page.on_error).to respond_to(:call)
     end
   end

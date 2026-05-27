@@ -13,3 +13,9 @@ end
 
 require "rspec/rails"
 require "poli_page-rails"
+
+Dir[File.expand_path("support/**/*.rb", __dir__)].each { |f| require f }
+
+RSpec.configure do |config|
+  config.include PoliPage::Rails::Test::NotificationsLeakDetector
+end

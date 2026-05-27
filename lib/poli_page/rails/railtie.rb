@@ -2,6 +2,8 @@
 
 require "rails/railtie"
 
+require_relative "notifications"
+
 module PoliPage
   module Rails
     class Railtie < ::Rails::Railtie
@@ -15,11 +17,14 @@ module PoliPage
         app.config.poli_page = Configuration.new
       end
 
-      # Default logger fill-in. Task 8 extends this block to install the
-      # ActiveSupport::Notifications bridges as default callables.
       config.after_initialize do |app|
         c = app.config.poli_page
         c.logger ||= ::Rails.logger
+
+        if c.notifications
+          c.on_retry ||= PoliPage::Rails::Notifications.retry_bridge
+          c.on_error ||= PoliPage::Rails::Notifications.error_bridge
+        end
       end
     end
   end
