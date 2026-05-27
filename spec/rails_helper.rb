@@ -18,4 +18,5 @@ Dir[File.expand_path("support/**/*.rb", __dir__)].each { |f| require f }
 
 RSpec.configure do |config|
   config.include PoliPage::Rails::Test::NotificationsLeakDetector
+  config.include PoliPage::Rails::Test::RestoresGlobalHandlers
 end

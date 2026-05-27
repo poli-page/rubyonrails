@@ -84,6 +84,12 @@ RSpec/MultipleDescribes:
 RSpec/SpecFilePathFormat:
   Enabled: false
 
+# Integration specs describe end-to-end behaviour against the deployed API,
+# not a specific class. Mirrors the SDK convention.
+RSpec/DescribeClass:
+  Exclude:
+    - "spec/integration/**/*"
+
 # Configuration#initialize and #to_client_kwargs are explicit lists of every
 # SDK kwarg — splitting them would obscure the 1:1 mapping with the SDK
 # Client constructor.
