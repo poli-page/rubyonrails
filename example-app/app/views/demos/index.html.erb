@@ -566,10 +566,14 @@
     },
     'doc-get': async target => {
       if (!state.docId) return;
-      const r = await fetch(`/api/documents/${state.docId}`, { redirect: 'follow' });
-      if (!r.ok) return renderError(target, `HTTP ${r.status}`);
-      const blob = await r.blob();
-      renderIframe(target, URL.createObjectURL(blob), 'stored pdf', `${blob.size.toLocaleString()} bytes`);
+      // Why: /api/documents/:id returns a 302 to a presigned S3 URL. fetch()
+      // with redirect:'follow' to a cross-origin response produces an opaque
+      // response (S3 sends no Access-Control-Allow-Origin), so the browser
+      // refuses to expose the body — "Failed to fetch". <iframe> navigation
+      // isn't a fetch, so it follows the redirect natively. Trade-off: we
+      // lose the byte-count display in the result label.
+      renderIframe(target, `/api/documents/${state.docId}`, 'stored pdf',
+                   'served via 302 → presigned S3 URL');
     },
     'doc-preview': async target => {
       if (!state.docId) return;
