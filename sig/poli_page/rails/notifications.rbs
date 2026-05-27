@@ -1,0 +1,11 @@
+module PoliPage
+  module Rails
+    module Notifications
+      RETRY_EVENT_NAME: String
+      ERROR_EVENT_NAME: String
+
+      def self.retry_bridge: () -> ^(untyped) -> void
+      def self.error_bridge: () -> ^(untyped) -> void
+    end
+  end
+end

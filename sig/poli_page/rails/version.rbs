@@ -1,0 +1,5 @@
+module PoliPage
+  module Rails
+    VERSION: String
+  end
+end

@@ -1,0 +1,7 @@
+module PoliPage
+  module Rails
+    module FilenameEncoder
+      def self.disposition: (String filename, inline: bool) -> String
+    end
+  end
+end

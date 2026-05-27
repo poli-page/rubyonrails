@@ -12,7 +12,7 @@ AllCops:
     - "vendor/**/*"
     - "tmp/**/*"
     - "gemfiles/**/*"
-    - "example-app/db/schema.rb"
+    - "example-app/**/*"   # downstream Rails 8 app; not gem code
     - "spec/internal/**/*"
 
 # Double-quoted strings are the dominant convention in modern Ruby SDKs

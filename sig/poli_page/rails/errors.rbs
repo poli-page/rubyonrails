@@ -1,0 +1,7 @@
+module PoliPage
+  module Rails
+    class ConfigurationError < PoliPage::Error
+      def initialize: (String message) -> void
+    end
+  end
+end

@@ -1,0 +1,11 @@
+module PoliPage
+  def self.client: () -> PoliPage::Client
+  def self.reset_client!: () -> void
+
+  module Rails
+    module Client
+      def self.instance: () -> PoliPage::Client
+      def self.reset!: () -> void
+    end
+  end
+end

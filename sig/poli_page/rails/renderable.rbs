@@ -1,0 +1,11 @@
+module PoliPage
+  module Rails
+    module Renderable
+      extend ActiveSupport::Concern
+
+      def render_pdf: (String bytes, ?filename: String, ?inline: bool) -> void
+      def render_preview: (untyped result) -> void
+      def redirect_to_document: (untyped descriptor, ?status: Symbol | Integer) -> void
+    end
+  end
+end
