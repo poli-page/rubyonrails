@@ -29,6 +29,19 @@ class RendersController < ApplicationController
     render json: descriptor.to_h
   end
 
+  # POST /api/render/file  — SDK demo step 3 (render_to_file)
+  # Streams the PDF straight to disk under tmp/poli-page/welcome.pdf —
+  # memory-bounded regardless of output size.
+  def render_file
+    output = Rails.root.join("tmp", "poli-page", "welcome.pdf")
+    FileUtils.mkdir_p(output.dirname)
+    PoliPage.client.render_to_file(
+      output.to_s,
+      **canonical_kwargs.merge(data: { name: "render_to_file demo" })
+    )
+    render json: { path: output.to_s, sizeBytes: File.size(output) }
+  end
+
   private
 
   def canonical_kwargs

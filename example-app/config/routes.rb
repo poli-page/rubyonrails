@@ -7,6 +7,7 @@ Rails.application.routes.draw do
     get    "/render/pdf",               to: "renders#pdf"
     get    "/render/stream",            to: "streams#stream"
     get    "/render/preview",           to: "renders#preview"
+    post   "/render/file",              to: "renders#render_file"
     post   "/documents",                to: "renders#document"
     get    "/documents/:id",            to: "documents#show",       constraints: { id: %r{[^/]+} }
     get    "/documents/:id/thumbnails", to: "documents#thumbnails", constraints: { id: %r{[^/]+} }
