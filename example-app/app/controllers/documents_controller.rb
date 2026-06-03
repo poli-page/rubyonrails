@@ -52,12 +52,13 @@ class DocumentsController < ApplicationController
   private
 
   def render_poli_page_error(err)
+    payload = err.to_payload
+    status = payload[:status] || 500
     render json: {
-      error:      err.class.name,
-      code:       err.code,
-      message:    err.message,
-      status:     err.status,
-      request_id: err.request_id
-    }, status: (err.status || 500)
+      code:      payload[:code],
+      message:   payload[:message],
+      status:    status,
+      requestId: payload[:request_id]
+    }, status: status
   end
 end
