@@ -1,36 +1,53 @@
 # poli_page-rails
 
-[![CI](https://github.com/poli-page/rails/actions/workflows/ci.yml/badge.svg)](https://github.com/poli-page/rails/actions/workflows/ci.yml)
-[![Gem Version](https://badge.fury.io/rb/poli_page-rails.svg)](https://rubygems.org/gems/poli_page-rails)
+> Render Poli Page documents from Rails controllers.
 
-Rails engine for the [Poli Page](https://poli.page) PDF rendering API. Thin
-wrapper over the official [`poli-page`](https://rubygems.org/gems/poli-page)
-Ruby SDK with idiomatic Rails wiring: lazy-memoised client, controller concern
-for PDF/HTML responses with RFC 5987 `Content-Disposition`, install generator,
-and an `ActiveSupport::Notifications` bridge for the SDK's retry / error hooks.
+## About
 
-- **Rails**: 7.0, 7.1, 7.2, 8.0
-- **Ruby**: 3.2+
-- **SDK**: `poli-page ~> 1.0` (the gem is a wrapper, not a reimplementation)
+This gem wires the official [`poli-page`](https://rubygems.org/gems/poli-page) Ruby SDK into a Rails app as an Engine. A Railtie installs a `Configuration` object on `Rails.application.config.poli_page`, `PoliPage.client` returns a lazy-memoised SDK client, and a `Renderable` controller concern turns SDK responses into PDF, HTML, or 302 responses with RFC 5987 `Content-Disposition` headers. Retry and terminal-error hooks on the SDK bridge into `ActiveSupport::Notifications` so subscribers like `lograge`, `appsignal`, or `scout_apm` pick them up without extra wiring.
+
+**When to use this:**
+
+- You render PDFs or HTML previews from a Rails controller and want `send_data`-shaped helpers that already set the right cache and content-disposition headers.
+- You want SDK retry and error events on the standard `ActiveSupport::Notifications` bus.
+- You want a generator that writes a fully commented `config/initializers/poli_page.rb`.
+
+**When not to:**
+
+- You are outside Rails — use the [`poli-page`](https://rubygems.org/gems/poli-page) SDK directly.
+- You need to reimplement HTTP transport, retry policy, idempotency, or error mapping. Those live in the SDK; this gem deliberately does not duplicate them.
+
+## Requirements
+
+- Ruby 3.2 or newer
+- Rails 7.0, 7.1, 7.2, or 8.0
+- `poli-page` SDK `~> 1.0`
 
 ## Install
+
+Add the gem to your `Gemfile`:
 
 ```ruby
 # Gemfile
 gem "poli_page-rails"
 ```
 
-```bash
+Then run:
+
+```ruby
+# shell
 bundle install
 bin/rails generate poli_page:install
 ```
 
-That writes `config/initializers/poli_page.rb` with a commented template.
-Set `POLI_PAGE_API_KEY` in your environment, then restart the app.
+The generator writes `config/initializers/poli_page.rb` with a commented template. Set `POLI_PAGE_API_KEY` in your environment (the value must start with `pp_test_` or `pp_live_`), then restart the app.
 
-## Render a PDF from a controller
+## Quick start
+
+Return a generated PDF from any controller action.
 
 ```ruby
+# app/controllers/invoices_controller.rb
 class InvoicesController < ApplicationController
   include PoliPage::Rails::Renderable
 
@@ -47,114 +64,113 @@ class InvoicesController < ApplicationController
 end
 ```
 
-`render_pdf` sets `Content-Type: application/pdf`, `Cache-Control: private,
-no-store`, `X-Content-Type-Options: nosniff`, and an RFC 5987 / RFC 6266
-`Content-Disposition` that round-trips non-ASCII filenames correctly (`résumé.pdf`,
-`発票.pdf`, `🦀.pdf`, …).
-
-Two more helpers ship in the same concern:
-
-```ruby
-# HTML preview (no PDF round-trip)
-def preview
-  result = PoliPage.client.render.preview(project: "billing", template: "invoice",
-                                          version: "2.1.0", data: invoice_data)
-  render_preview(result)
-end
-
-# 302 to a presigned URL for a previously-stored document
-def download
-  descriptor = PoliPage.client.documents.get(params[:id])
-  redirect_to_document(descriptor)
-end
-```
+`render_pdf` sets `Content-Type: application/pdf`, `Cache-Control: private, no-store`, `X-Content-Type-Options: nosniff`, and an RFC 5987 / RFC 6266 `Content-Disposition` that round-trips non-ASCII filenames.
 
 ## Configuration
 
-Every key is optional except `api_key`. SDK defaults apply when a value is `nil`.
+Every key is optional except `api_key`. The SDK's own defaults apply when a value is left `nil`.
+
+| Option | Default | Description |
+|---|---|---|
+| `api_key` | — | Required. `pp_test_…` or `pp_live_…`. |
+| `base_url` | `https://api.poli.page` | Override for the develop environment or a private proxy. |
+| `timeout` | SDK default | Request timeout in seconds. Must be in `1..600`. |
+| `max_retries` | SDK default | Retry attempts on retryable failures. Must be in `0..10`. |
+| `retry_delay` | SDK default | Base backoff delay in seconds. Must be in `0..30`. |
+| `logger` | `Rails.logger` | Any `Logger`-compatible instance. |
+| `proxy` | `nil` | HTTP proxy URL. Honoured by `Net::HTTP` via the SDK. |
+| `ca_file` | `nil` | Path to a CA bundle for corporate egress. |
+| `ca_path` | `nil` | Path to a CA directory. |
+| `notifications` | `true` | Set to `false` to disable the `ActiveSupport::Notifications` bridge. |
+| `on_retry` | bridge | Custom callable. Setting it replaces the notifications bridge. |
+| `on_error` | bridge | Custom callable. Setting it replaces the notifications bridge. |
+
+A minimal initializer:
 
 ```ruby
 # config/initializers/poli_page.rb
 Rails.application.config.poli_page.tap do |c|
-  c.api_key      = ENV.fetch("POLI_PAGE_API_KEY")
-  c.base_url     = ENV["POLI_PAGE_BASE_URL"]            # default: https://api.poli.page
-  c.timeout      = 30.0                                  # seconds, 1..600
-  c.max_retries  = 3                                     # 0..10
-  c.retry_delay  = 0.5                                   # seconds, 0..30
-  c.logger       = Rails.logger                          # default
-  c.proxy        = ENV["POLI_PAGE_HTTP_PROXY"]
-  c.ca_file      = ENV["POLI_PAGE_CA_FILE"]
-  c.ca_path      = ENV["POLI_PAGE_CA_PATH"]
-  c.notifications = true                                 # default: opt-out
-  c.on_retry     = ->(event) { Rails.logger.info("PoliPage retry: #{event.attempt}") }
-  c.on_error     = ->(err)   { Sentry.capture_exception(err) }
+  c.api_key = ENV.fetch("POLI_PAGE_API_KEY")
 end
 ```
 
-Setting `on_retry` / `on_error` **replaces** the default
-`ActiveSupport::Notifications` bridge. To layer custom behaviour on top of
-the bridge, subscribe instead (next section).
+Configuration is validated lazily on the first `PoliPage.client` call, so `assets:precompile` and `db:create` keep working in containers that have no secrets at boot.
 
-## Notifications
+## API at a glance
 
-By default, every SDK retry fires `ActiveSupport::Notifications.instrument
-"poli_page.retry"`, and every terminal error fires `"poli_page.error"`. Zero
-overhead when nothing subscribes, so subscribers like `lograge`, `appsignal`,
-or `scout_apm` just work without further config.
+| Symbol | Purpose |
+|---|---|
+| `PoliPage.client` | Lazy-memoised, thread-safe SDK `PoliPage::Client`. |
+| `PoliPage::Rails::Renderable` | Controller concern exposing `render_pdf`, `render_preview`, `redirect_to_document`. |
+| `PoliPage::Rails::Configuration` | The object behind `Rails.application.config.poli_page`. |
+| `PoliPage::Rails::Engine` | Rails engine subclass auto-loaded from your `Gemfile`. |
+| `PoliPage::Rails::Railtie` | Installs the configuration, the logger default, and the notifications bridge. |
+| `"poli_page.retry"` | `ActiveSupport::Notifications` event fired before each SDK retry. |
+| `"poli_page.error"` | `ActiveSupport::Notifications` event fired on terminal SDK failure. |
+| `rails generate poli_page:install` | Writes `config/initializers/poli_page.rb`. |
+
+Full reference: [docs/api.md](docs/api.md) (forthcoming).
+
+## Errors
+
+The SDK raises a fixed hierarchy under `PoliPage::Error`. The four categories you typically branch on:
+
+- **Auth** — `PoliPage::AuthenticationError`, `PoliPage::PermissionDeniedError`. Bad or revoked key, blocked organization.
+- **Rate limit** — `PoliPage::RateLimitError`. The API returned `429`; honour `Retry-After`.
+- **Request rejected** — `PoliPage::ValidationError`. The template, project, version, or `data` payload was rejected at `400`.
+- **Network / transport** — `PoliPage::ConnectionError`, `PoliPage::TimeoutError`. Network failure, DNS, TLS, or timeout.
+
+This gem adds one Rails-specific error: `PoliPage::Rails::ConfigurationError`, raised by `ConfigurationValidator` on the first `PoliPage.client` call when the initializer is invalid. It inherits from `PoliPage::Error`, so a single `rescue PoliPage::Error` catches everything.
 
 ```ruby
-ActiveSupport::Notifications.subscribe("poli_page.retry") do |*args|
-  event = ActiveSupport::Notifications::Event.new(*args)
-  Rails.logger.warn("PoliPage retry attempt=#{event.payload[:attempt]} " \
-                    "delay=#{event.payload[:delay]} reason=#{event.payload[:reason].class}")
-end
-
-ActiveSupport::Notifications.subscribe("poli_page.error") do |*args|
-  event = ActiveSupport::Notifications::Event.new(*args)
-  Sentry.capture_exception(event.payload[:error])
+# app/controllers/invoices_controller.rb
+def show
+  bytes = PoliPage.client.render.pdf(project: "billing", template: "invoice",
+                                      version: "2.1.0", data: invoice_data)
+  render_pdf(bytes, filename: "invoice.pdf")
+rescue PoliPage::ValidationError => e
+  Rails.logger.warn("PoliPage validation failed: #{e.message}")
+  head :unprocessable_entity
+rescue PoliPage::RateLimitError
+  head :too_many_requests
+rescue PoliPage::AuthenticationError, PoliPage::PermissionDeniedError
+  head :forbidden
+rescue PoliPage::ConnectionError, PoliPage::TimeoutError
+  head :bad_gateway
 end
 ```
-
-Opt out entirely with `c.notifications = false`.
 
 ## Example app
 
-A runnable Rails 8 app lives in [`example-app/`](./example-app) with an
-interactive single-page UI hitting every public SDK method:
+A runnable Rails 8 app lives in [`example-app/`](./example-app). It exercises every public SDK method behind a single-page UI and ships a `bin/rake demo:render_to_file` task for the `render_to_file` SDK path.
 
-```bash
+```ruby
+# shell
 cd example-app
 bundle install
 bin/rails server
-open http://localhost:3000
 ```
 
-## What this gem deliberately does *not* do
+## Going further
 
-- It does **not** reimplement HTTP transport, retries, error mapping, or
-  `Idempotency-Key` generation. Those live in the SDK.
-- It does **not** ship a Rake task for rendering — the example app's
-  `bin/rake demo:render_to_file` shows the pattern; copy it into your own
-  `lib/tasks/` if useful.
-- It does **not** expose `Engine.config.poli_page` (that's just an artefact
-  of how `isolate_namespace` works). The user-facing namespace is
-  `Rails.application.config.poli_page`.
+- ActiveSupport::Notifications — subscribe to `poli_page.retry` and `poli_page.error` for logging, metrics, and alerting (forthcoming `docs/notifications.md`).
+- Filename encoding — how `PoliPage::Rails::FilenameEncoder` produces RFC 5987 `Content-Disposition` values for non-ASCII names (forthcoming `docs/filenames.md`).
+- Background rendering — running renders through Active Job for slow templates (forthcoming `docs/active_job.md`).
+- Testing helpers — stubbing `PoliPage.client` in request specs and system tests (forthcoming `docs/testing.md`).
+- Engine specification — the full design spec for v0.1.0 at [`docs/spec/rails-engine-specification.md`](docs/spec/rails-engine-specification.md).
 
-## Development
+## Compatibility
 
-```bash
-bundle install
-bundle exec rspec                            # unit specs
-bundle exec rspec spec/integration           # integration spec (needs POLI_PAGE_API_KEY)
-bundle exec rubocop
-bundle exec appraisal install                # set up the Rails matrix
-bundle exec appraisal rails-8.0 rspec        # one matrix cell
-```
+| Gem | Rails | Ruby |
+|---|---|---|
+| 0.1.x | 7.0 / 7.1 / 7.2 / 8.0 | 3.2 – 3.4 |
 
-The full design spec is in [`docs/spec/rails-engine-specification.md`](docs/spec/rails-engine-specification.md);
-the implementation plan and the per-task commits are at
-[`docs/plan/2026-05-27-implementation.md`](docs/plan/2026-05-27-implementation.md).
+You receive fixes for the latest two Rails majors. Older majors receive security fixes for six months after their upstream EOL.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Released under the MIT License — see [LICENSE](LICENSE).
