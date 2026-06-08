@@ -22,9 +22,9 @@ module PoliPage
         @retry_bridge ||= lambda do |event|
           ::ActiveSupport::Notifications.instrument(
             RETRY_EVENT_NAME,
-            attempt: event.attempt,
-            delay:   event.delay,
-            reason:  event.reason
+            attempt:  event.attempt,
+            delay_ms: event.delay_ms,
+            reason:   event.reason
           )
         end
       end

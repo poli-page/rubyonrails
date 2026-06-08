@@ -18,7 +18,7 @@ RSpec.describe PoliPage::Rails::Notifications do
       end
 
       event = PoliPage::RetryEvent.new(
-        attempt: 2, delay: 0.5,
+        attempt: 2, delay_ms: 500,
         reason: PoliPage::TimeoutError.new(timeout: 30)
       )
       described_class.retry_bridge.call(event)
@@ -26,7 +26,7 @@ RSpec.describe PoliPage::Rails::Notifications do
       expect(received).not_to be_nil
       expect(received.name).to eq("poli_page.retry")
       expect(received.payload[:attempt]).to eq(2)
-      expect(received.payload[:delay]).to eq(0.5)
+      expect(received.payload[:delay_ms]).to eq(500)
       expect(received.payload[:reason]).to be_a(PoliPage::TimeoutError)
     ensure
       ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
