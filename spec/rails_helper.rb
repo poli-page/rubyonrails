@@ -2,7 +2,7 @@
 
 require_relative "spec_helper"
 
-ENV["RAILS_ENV"] ||= "test"
+ENV["RAILS_ENV"] = "test"
 
 require "combustion"
 Combustion.path = "spec/internal"
