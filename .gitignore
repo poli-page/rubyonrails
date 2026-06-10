@@ -67,3 +67,6 @@ build-iPhoneSimulator/
 # shared source of truth (see CLAUDE.md §10.3).
 /.env
 /.env.local
+CLAUDE.md
+docs/plan/
+docs/spec/

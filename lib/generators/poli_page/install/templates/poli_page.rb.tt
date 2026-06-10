@@ -9,7 +9,7 @@ Rails.application.config.poli_page.tap do |c|
   c.api_key = ENV.fetch("POLI_PAGE_API_KEY")
 
   # Optional — defaults to https://api.poli.page (the SDK applies its default
-  # when this is nil). Use https://api-develop.poli.page for the develop env.
+  # when this is nil).
   # c.base_url = ENV["POLI_PAGE_BASE_URL"]
 
   # Optional — request timeout in seconds (Float). SDK default applies when nil.
