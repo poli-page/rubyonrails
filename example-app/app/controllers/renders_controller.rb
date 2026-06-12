@@ -26,6 +26,7 @@ class RendersController < ApplicationController
   # POST /api/documents  — SDK demo step 5
   def document
     descriptor = PoliPage.client.render.document(**canonical_kwargs)
+    warm_up_preview_and_thumbnails(descriptor.document_id)
     render json: descriptor.to_h
   end
 
@@ -43,6 +44,26 @@ class RendersController < ApplicationController
   end
 
   private
+
+  # Demo flows hit /documents/:id/preview and /documents/:id/thumbnails
+  # almost immediately after document.create returns. Backend rendering
+  # races with those requests; warming both endpoints in a fire-and-forget
+  # thread lets the first probe paint the cache instead of paying the cold
+  # path inline. Best-effort: warmup failures are swallowed.
+  def warm_up_preview_and_thumbnails(id)
+    return unless id
+
+    Thread.new do
+      PoliPage.client.documents.preview(id)
+    rescue StandardError
+      # ignore — warm-up is best-effort
+    end
+    Thread.new do
+      PoliPage.client.documents.thumbnails(id, width: 320, format: "png", pages: [1])
+    rescue StandardError
+      # ignore — warm-up is best-effort
+    end
+  end
 
   def canonical_kwargs
     {
