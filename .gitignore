@@ -56,6 +56,9 @@ build-iPhoneSimulator/
 # .rubocop-https?--*
 
 /Gemfile.lock
+# Appraisal-generated gemfiles + their lockfiles. CI runs `appraisal generate`
+# itself, so neither is committed (keeps them from drifting out of sync).
+/gemfiles/*.gemfile
 /gemfiles/*.gemfile.lock
 /.rspec_status
 /spec/internal/log/*.log

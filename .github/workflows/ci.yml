@@ -10,11 +10,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby: ['3.1', '3.2', '3.3', '3.4']
+        # Ruby 3.1 is excluded: poli-page (the SDK) and poli_page-rails both
+        # declare required_ruby_version >= 3.2, so 3.1 can never resolve.
+        ruby: ['3.2', '3.3', '3.4']
         rails: ['7.0', '7.1', '7.2', '8.0']
-        exclude:
-          - ruby: '3.1'
-            rails: '8.0'   # Rails 8 requires Ruby >= 3.2
     steps:
       - uses: actions/checkout@v4
         with: { path: rails }
@@ -33,7 +32,12 @@ jobs:
         working-directory: rails
         run: |
           if [ -f Appraisals ]; then
-            bundle exec appraisal "rails-${{ matrix.rails }}" install
+            # `appraisal NAME install` is invalid: NAME is consumed as the
+            # appraisal scope and `install` is run as an external command (the
+            # /usr/bin/install binary), which fails. Generate the per-Rails
+            # gemfiles, then bundle install only the one this job needs.
+            bundle exec appraisal generate
+            BUNDLE_GEMFILE="gemfiles/rails_${{ matrix.rails }}.gemfile" bundle install --jobs 4 --retry 3
           else
             echo "Skipping appraisal: no Appraisals yet"
           fi
