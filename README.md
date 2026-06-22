@@ -21,7 +21,7 @@ This gem wires the official [`poli-page`](https://rubygems.org/gems/poli-page) R
 
 - Ruby 3.2 or newer
 - Rails 7.0, 7.1, 7.2, or 8.0
-- `poli-page` SDK `~> 1.0`
+- `poli-page` SDK `~> 0.9`
 
 ## Install
 

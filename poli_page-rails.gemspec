@@ -29,7 +29,7 @@ Gem::Specification.new do |spec|
                %w[LICENSE README.md CHANGELOG.md].select { |f| File.exist?(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "poli-page",     "~> 1.0.0.rc"
+  spec.add_dependency "poli-page",     "~> 0.9"
   spec.add_dependency "railties",      ">= 7.0", "< 9"
   spec.add_dependency "actionpack",    ">= 7.0", "< 9"
   spec.add_dependency "activesupport", ">= 7.0", "< 9"
