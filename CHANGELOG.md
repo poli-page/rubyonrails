@@ -6,6 +6,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- `render_pdf` / `FilenameEncoder.disposition`: control characters (CR/LF, TAB,
+  DEL, C1) are now stripped from the `Content-Disposition` filename before
+  `ActionDispatch::Http::ContentDisposition` formats it, instead of surviving as
+  `%0D%0A`-style escapes that clients decode back into the saved filename.
+
 ## [0.1.0] — 2026-05-27
 
 ### Added
