@@ -61,7 +61,7 @@ reviews:
         integration: do not reimplement HTTP transport, retry, idempotency or error mapping (they
         live in the SDK). Public API (PoliPage.client, Configuration, Renderable, notifications)
         must stay consistent with the other poli-page SDKs and the API spec (errors are
-        { error: { code } }), with no breaking change without a major version bump and a
+        { error: CODE_STRING, detail?, issues? } (flat, API spec §4.1)), with no breaking change without a major version bump and a
         CHANGELOG.md entry.
     - path: "sig/**/*.rbs"
       instructions: >-
