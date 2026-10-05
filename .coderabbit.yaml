@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit config for poli-page repos. PRs here are mostly opened and fixed by automated agents
+# (the poli-page auto loop and issue pipeline), which read CodeRabbit's findings and its commit status.
+language: en-US
+early_access: false
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  allow_author_approval: true
+  # The summary goes in the walkthrough, never in the PR description: the merge gate reads the description.
+  high_level_summary: false
+  high_level_summary_in_walkthrough: true
+  review_status: true
+  review_details: false
+  # The loop decides "reviewed this head" from the CodeRabbit commit status ("Review completed").
+  review_progress: true
+  commit_status: true
+  fail_commit_status: false
+  collapse_walkthrough: true
+  changed_files_summary: true
+  sequence_diagrams: true
+  estimate_code_review_effort: true
+  assess_linked_issues: true
+  related_issues: true
+  related_prs: true
+  suggested_labels: true
+  # PR labels are the closed issues' labels; CodeRabbit only suggests.
+  auto_apply_labels: false
+  suggested_reviewers: true
+  auto_assign_reviewers: false
+  in_progress_fortune: false
+  poem: false
+  enable_prompt_for_ai_agents: true
+  abort_on_close: true
+  disable_cache: false
+  slop_detection:
+    enabled: true
+    include_all_authors: false
+  auto_review:
+    enabled: true
+    drafts: false
+    # Every push of a fix round must be reviewed, and never auto-paused (the loop allows up to 5 rounds).
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 0
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
+  path_filters:
+    - "!**/Gemfile.lock"
+    - "!coverage/**"
+    - "!pkg/**"
+    - "!gemfiles/*.gemfile"
+    - "!gemfiles/*.gemfile.lock"
+    - "!example-app/log/**"
+    - "!example-app/tmp/**"
+    - "!example-app/config/credentials.yml.enc"
+  path_instructions:
+    - path: "lib/**/*.rb"
+      instructions: >-
+        This is the poli_page-rails gem wrapping the poli-page Ruby SDK. Keep it a thin Rails
+        integration: do not reimplement HTTP transport, retry, idempotency or error mapping (they
+        live in the SDK). Public API (PoliPage.client, Configuration, Renderable, notifications)
+        must stay consistent with the other poli-page SDKs and the API spec (errors are
+        { error: { code } }), with no breaking change without a major version bump and a
+        CHANGELOG.md entry.
+    - path: "sig/**/*.rbs"
+      instructions: >-
+        RBS signatures must match the Ruby implementation in lib/ for every public method; flag
+        any lib/ change to a public signature that is not mirrored here.
+    - path: "spec/**/*.rb"
+      instructions: >-
+        Every public method of the gem needs a spec. Support Rails 7.0 to 8.0 (see Appraisals) and
+        Ruby 3.2+. Specs must not leak global state (see spec/support helpers) and must not need a
+        real API key unless they are the explicit integration spec.
+    - path: "example-app/**"
+      instructions: >-
+        Sample Rails app that customers copy: favour correctness, idiomatic Rails (controllers,
+        routes, initializers) and security. API keys come from env vars (POLI_PAGE_API_KEY), never
+        hardcoded or logged; flag any committed secret. Keep it consistent with the README and
+        example-app/README.md.
+    - path: "README.md"
+      instructions: >-
+        Code samples and the configuration table (options, defaults, ranges) must match the actual
+        behaviour of lib/poli_page/rails/configuration.rb and the generator template.
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns: []
