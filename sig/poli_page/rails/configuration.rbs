@@ -20,10 +20,11 @@ module PoliPage
     end
 
     module ConfigurationValidator
-      API_KEY_PATTERN: Regexp
+      ENVIRONMENT_PREFIX: Regexp
+      API_KEY_FORMAT: Regexp
 
       def self.validate!: (Configuration) -> void
-      def self.validate_api_key!: (untyped) -> void
+      def self.validate_api_key!: (untyped, untyped logger) -> void
       def self.validate_base_url!: (untyped) -> void
       def self.validate_timeout!: (untyped) -> void
       def self.validate_max_retries!: (untyped) -> void

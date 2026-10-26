@@ -21,7 +21,7 @@ This gem wires the official [`poli-page`](https://rubygems.org/gems/poli-page) R
 
 - Ruby 3.2 or newer
 - Rails 7.0, 7.1, 7.2, or 8.0
-- `poli-page` SDK `~> 0.9`
+- `poli-page` SDK: the release without template versions (after 0.9.1; until it is on RubyGems, this repo's `Gemfile` pins `sdk-ruby` main)
 
 ## Install
 
@@ -40,7 +40,21 @@ bundle install
 bin/rails generate poli_page:install
 ```
 
-The generator writes `config/initializers/poli_page.rb` with a commented template. Set `POLI_PAGE_API_KEY` in your environment (the value must start with `pp_test_` or `pp_live_`), then restart the app.
+The generator writes `config/initializers/poli_page.rb` with a commented template. Set `POLI_PAGE_API_KEY` in your environment, then restart the app.
+
+### API keys
+
+A key belongs to exactly one environment of your organization and reads `pp_{environment}_{32 lowercase hex}`. The key alone selects the environment, and so the published copy of each project that renders.
+
+| Environment                           | Key            | Watermark | Counted |
+| ------------------------------------- | -------------- | --------- | ------- |
+| `sandbox` (every org)                 | `pp_sandbox_…` | yes       | no      |
+| `live` (every org, deletable on Pro+) | `pp_live_…`    | no        | yes     |
+| created on Pro+ (e.g. `staging`)      | `pp_staging_…` | no        | yes     |
+
+"Counted" means the render counts toward the organization's monthly PDF quota.
+
+The API is the only authority on keys. The gem raises `ConfigurationError` only when `api_key` is missing or empty. A value that does not match `pp_{environment}_{32 lowercase hex}` logs one warning through `config.logger` (showing at most the `pp_{environment}_` part, never the secret), then the client starts anyway and the API answers `401` if the key is wrong (`INVALID_API_KEY`, or `MISSING_API_KEY` for a value without `pp_`).
 
 ## Quick start
 
@@ -56,7 +70,6 @@ class InvoicesController < ApplicationController
     bytes = PoliPage.client.render.pdf(
       project:  "billing",
       template: "invoice",
-      version:  "2.1.0",
       data:     invoice.to_template_data
     )
     render_pdf(bytes, filename: "#{invoice.number}.pdf", inline: false)
@@ -72,7 +85,7 @@ Every key is optional except `api_key`. The SDK's own defaults apply when a valu
 
 | Option | Default | Description |
 |---|---|---|
-| `api_key` | — | Required. `pp_test_…` or `pp_live_…`. |
+| `api_key` | — | Required. A key for one environment: `pp_sandbox_…`, `pp_live_…`, or `pp_{environment}_…` (see [API keys](#api-keys)). |
 | `base_url` | `https://api.poli.page` | Override for the develop environment or a private proxy. |
 | `timeout` | SDK default | Request timeout in seconds. Must be in `1..600`. |
 | `max_retries` | SDK default | Retry attempts on retryable failures. Must be in `0..10`. |
@@ -117,7 +130,7 @@ The SDK raises a fixed hierarchy under `PoliPage::Error`. The four categories yo
 
 - **Auth** — `PoliPage::AuthenticationError`, `PoliPage::PermissionDeniedError`. Bad or revoked key, blocked organization.
 - **Rate limit** — `PoliPage::RateLimitError`. The API returned `429`; honour `Retry-After`.
-- **Request rejected** — `PoliPage::ValidationError`. The template, project, version, or `data` payload was rejected at `400`.
+- **Request rejected** — `PoliPage::ValidationError`. The template, project, or `data` payload was rejected at `400`.
 - **Network / transport** — `PoliPage::ConnectionError`, `PoliPage::TimeoutError`. Network failure, DNS, TLS, or timeout.
 
 This gem adds one Rails-specific error: `PoliPage::Rails::ConfigurationError`, raised by `ConfigurationValidator` on the first `PoliPage.client` call when the initializer is invalid. It inherits from `PoliPage::Error`, so a single `rescue PoliPage::Error` catches everything.
@@ -125,8 +138,7 @@ This gem adds one Rails-specific error: `PoliPage::Rails::ConfigurationError`, r
 ```ruby
 # app/controllers/invoices_controller.rb
 def show
-  bytes = PoliPage.client.render.pdf(project: "billing", template: "invoice",
-                                      version: "2.1.0", data: invoice_data)
+  bytes = PoliPage.client.render.pdf(project: "billing", template: "invoice", data: invoice_data)
   render_pdf(bytes, filename: "invoice.pdf")
 rescue PoliPage::ValidationError => e
   Rails.logger.warn("PoliPage validation failed: #{e.message}")
@@ -142,12 +154,14 @@ end
 
 ## Example app
 
-A runnable Rails 8 app lives in [`example-app/`](./example-app). It exercises every public SDK method behind a single-page UI and ships a `bin/rake demo:render_to_file` task for the `render_to_file` SDK path.
+A runnable Rails 8 app lives in [`example-app/`](./example-app). It exercises every public SDK method behind a single-page UI and ships a `bin/rake demo:render_to_file` task for the `render_to_file` SDK path. It renders the `welcome` template of the `getting-started` project, which every organization has in its `sandbox` environment, and `GET /api/errors/not-found` renders the template `does-not-exist` to show the `404 TEMPLATE_NOT_FOUND` error's code, status, message, and request id.
 
 ```ruby
 # shell
 cd example-app
 bundle install
+export POLI_PAGE_API_KEY=pp_sandbox_...           # a sandbox key
+# export POLI_PAGE_BASE_URL=https://api.poli.page  # optional
 bin/rails server
 ```
 

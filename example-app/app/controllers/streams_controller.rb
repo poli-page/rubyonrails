@@ -23,7 +23,6 @@ class StreamsController < ApplicationController
     PoliPage.client.render.pdf_stream(
       project:  "getting-started",
       template: "welcome",
-      version:  "1.0.0",
       data:     { name: params.fetch(:name, "Rails User") }
     ) do |chunk|
       response.stream.write(chunk)

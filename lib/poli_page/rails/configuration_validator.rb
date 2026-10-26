@@ -9,10 +9,13 @@ module PoliPage
     module ConfigurationValidator
       module_function
 
-      API_KEY_PATTERN = /\App_(test|live)_/
+      # pp_{environment}_{32 lowercase hex}. Only drives a startup warning: the
+      # API is the authority on keys, so a mismatch never blocks the client.
+      ENVIRONMENT_PREFIX = /\App_(?=[a-z][a-z0-9-]{0,19}_)[a-z][a-z0-9]*(?:-[a-z0-9]+)*_/
+      API_KEY_FORMAT = /#{ENVIRONMENT_PREFIX.source}[0-9a-f]{32}\z/
 
       def validate!(config)
-        validate_api_key!(config.api_key)
+        validate_api_key!(config.api_key, config.logger)
         validate_base_url!(config.base_url)
         validate_timeout!(config.timeout)
         validate_max_retries!(config.max_retries)
@@ -22,11 +25,18 @@ module PoliPage
         validate_callable!(config.on_error, "on_error")
       end
 
-      def validate_api_key!(value)
-        return if value.is_a?(String) && API_KEY_PATTERN.match?(value)
+      def validate_api_key!(value, logger)
+        unless value.is_a?(String) && !value.empty?
+          raise ConfigurationError, "Poli Page api_key is required (a non-empty String). " \
+                                    "Get one at https://app.poli.page/settings/api-keys."
+        end
+        return if API_KEY_FORMAT.match?(value)
 
-        raise ConfigurationError, "Poli Page api_key must start with pp_test_ or pp_live_. " \
-                                  "Get one at https://app.poli.page/settings/api-keys."
+        # Only the pp_{environment}_ part may reach the log, never the secret.
+        shown = value[ENVIRONMENT_PREFIX]
+        subject = shown ? "api_key #{shown}…" : "api_key"
+        logger&.warn("Poli Page #{subject} does not match pp_{environment}_{32 lowercase hex}; " \
+                     "starting anyway, the API will reject it if it is not a valid key.")
       end
 
       def validate_base_url!(value)

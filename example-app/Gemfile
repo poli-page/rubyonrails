@@ -6,7 +6,8 @@ gem "rails", "~> 8.0"
 gem "puma",  "~> 6.4"
 
 gem "poli_page-rails", path: "../"
-gem "poli-page",       path: "../../sdk-ruby"
+# Same pin as the gem's Gemfile until the poli-page release ships.
+gem "poli-page",       git: "https://github.com/poli-page/sdk-ruby", ref: "a139f43f9bd12fe4a40e8f7edb6ea97c0af25c2d"
 
 gem "dotenv-rails", "~> 3.1"
 

@@ -6,14 +6,13 @@ Rails.application.routes.draw do
   scope "/api" do
     get    "/render/pdf",               to: "renders#pdf"
     get    "/render/stream",            to: "streams#stream"
-    get    "/render/preview",           to: "renders#preview"
     post   "/render/file",              to: "renders#render_file"
     post   "/documents",                to: "renders#document"
     get    "/documents/:id",            to: "documents#show",       constraints: { id: %r{[^/]+} }
     get    "/documents/:id/thumbnails", to: "documents#thumbnails", constraints: { id: %r{[^/]+} }
     get    "/documents/:id/preview",    to: "documents#preview",    constraints: { id: %r{[^/]+} }
     delete "/documents/:id",            to: "documents#destroy",    constraints: { id: %r{[^/]+} }
-    get    "/errors/bad-version",       to: "documents#bad_version"
+    get    "/errors/not-found",         to: "documents#not_found"
   end
 
   # Rails default health-check (kept from the rails new scaffold).

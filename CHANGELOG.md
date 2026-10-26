@@ -6,6 +6,35 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** requires the `poli-page` SDK release without template
+  versions (after 0.9.1). Render calls take no `version:`: a key belongs to
+  one environment (`pp_{environment}_{32 lowercase hex}`, for example
+  `pp_sandbox_…`, `pp_live_…`, `pp_staging_…`), and the key alone selects the
+  environment and so the published copy that renders. Until that release is
+  on RubyGems, the `Gemfile` and `example-app/Gemfile` pin `sdk-ruby` main by
+  git ref instead of a sibling `path:` checkout.
+- `ConfigurationValidator` accepts any environment key. It raises
+  `ConfigurationError` only for a missing or empty `api_key`; a value that does
+  not match `pp_{environment}_{32 lowercase hex}` logs one warning through
+  `config.logger` (showing at most the `pp_{environment}_` part, never the
+  secret) and the client starts anyway, leaving the verdict to the API.
+  `API_KEY_PATTERN` is replaced by `API_KEY_FORMAT`.
+- `render_preview` now documents `DocumentPreviewResult` (`documents.preview`)
+  only.
+- Example app: `GET /api/errors/bad-version` (`INVALID_VERSION_FORMAT`) is
+  replaced by `GET /api/errors/not-found`, which renders the template
+  `does-not-exist` and answers `404 TEMPLATE_NOT_FOUND` with the error's code,
+  status, message and request id. `GET /api/documents/:id/preview` now goes
+  through `render_preview`.
+- The integration spec runs only with a `pp_sandbox_` key.
+
+### Removed
+
+- Example app: `GET /api/render/preview` (`render.preview`) and its "HTML
+  preview" button; the SDK no longer has `render.preview`.
+
 ### Fixed
 
 - `render_pdf` / `FilenameEncoder.disposition`: control characters (CR/LF, TAB,

@@ -26,28 +26,28 @@ RSpec.describe PoliPage::Rails::Configuration do
 
   it "is mutable via attr_accessor for the config block idiom" do
     config = described_class.new
-    config.api_key = "pp_test_abc"
+    config.api_key = PoliPage::Rails::Test::SANDBOX_KEY
     config.timeout = 42.0
 
-    expect(config.api_key).to eq("pp_test_abc")
+    expect(config.api_key).to eq(PoliPage::Rails::Test::SANDBOX_KEY)
     expect(config.timeout).to eq(42.0)
   end
 
   describe "#to_client_kwargs" do
     it "drops nil values so the SDK's own defaults apply" do
       config = described_class.new
-      config.api_key = "pp_test_abc"
+      config.api_key = PoliPage::Rails::Test::SANDBOX_KEY
       config.timeout = 30.0
 
       kwargs = config.to_client_kwargs
-      expect(kwargs).to eq(api_key: "pp_test_abc", timeout: 30.0)
+      expect(kwargs).to eq(api_key: PoliPage::Rails::Test::SANDBOX_KEY, timeout: 30.0)
       expect(kwargs).not_to have_key(:base_url)
       expect(kwargs).not_to have_key(:max_retries)
     end
 
     it "passes through proxy / ca_file / ca_path when set" do
       config = described_class.new
-      config.api_key = "pp_test_abc"
+      config.api_key = PoliPage::Rails::Test::SANDBOX_KEY
       config.proxy = "http://proxy.example.com:8080"
       config.ca_file = "/etc/ssl/corp.pem"
 
@@ -58,7 +58,7 @@ RSpec.describe PoliPage::Rails::Configuration do
 
     it "does not include user_agent (the SDK does not currently accept it)" do
       config = described_class.new
-      config.api_key = "pp_test_abc"
+      config.api_key = PoliPage::Rails::Test::SANDBOX_KEY
       config.user_agent = "MyApp/1.0"
 
       expect(config.to_client_kwargs).not_to have_key(:user_agent)
@@ -69,35 +69,67 @@ end
 RSpec.describe PoliPage::Rails::ConfigurationValidator do
   subject(:validator) { described_class }
 
+  let(:logger) { instance_spy(Logger) }
+
   def config(**overrides)
     PoliPage::Rails::Configuration.new.tap do |c|
-      c.api_key = "pp_test_default"
+      c.api_key = PoliPage::Rails::Test::SANDBOX_KEY
+      c.logger = logger
       overrides.each { |k, v| c.public_send("#{k}=", v) }
     end
   end
 
   context "with api_key" do
+    hex = PoliPage::Rails::Test::SECRET
+
     it "rejects nil" do
       expect { validator.validate!(config(api_key: nil)) }
-        .to raise_error(PoliPage::Rails::ConfigurationError, /api_key must start with pp_test_ or pp_live_/)
+        .to raise_error(PoliPage::Rails::ConfigurationError, /api_key is required/)
     end
 
     it "rejects empty string" do
       expect { validator.validate!(config(api_key: "")) }
-        .to raise_error(PoliPage::Rails::ConfigurationError, /api_key must start with pp_test_ or pp_live_/)
+        .to raise_error(PoliPage::Rails::ConfigurationError, /api_key is required/)
     end
 
-    it "rejects dashboard tokens (missing pp_ prefix)" do
-      expect { validator.validate!(config(api_key: "abc_definitely_a_token")) }
-        .to raise_error(PoliPage::Rails::ConfigurationError, /api_key must start with pp_test_ or pp_live_/)
+    it "rejects a non-String value" do
+      expect { validator.validate!(config(api_key: 12_345)) }
+        .to raise_error(PoliPage::Rails::ConfigurationError, /api_key is required/)
     end
 
-    it "accepts pp_test_*" do
-      expect { validator.validate!(config(api_key: "pp_test_abc")) }.not_to raise_error
+    {
+      "a sandbox key" => "pp_sandbox_#{hex}",
+      "a live key" => "pp_live_#{hex}",
+      "a key for a created environment with a hyphen" => "pp_eu-prod_#{hex}",
+      "a 20-character environment name" => "pp_#{"a" * 20}_#{hex}"
+    }.each do |label, key|
+      it "accepts #{label} without a warning" do
+        expect { validator.validate!(config(api_key: key)) }.not_to raise_error
+        expect(logger).not_to have_received(:warn)
+      end
     end
 
-    it "accepts pp_live_*" do
-      expect { validator.validate!(config(api_key: "pp_live_xyz")) }.not_to raise_error
+    {
+      "a key whose secret is not 32 hex" => %w[pp_sandbox_x pp_sandbox_],
+      "an upper-case environment name" => ["pp_Sandbox_#{hex}", nil],
+      "an environment name starting with a digit" => ["pp_2fa_#{hex}", nil],
+      "an environment name with a double hyphen" => ["pp_a--b_#{hex}", nil],
+      "a 21-character environment name" => ["pp_#{"a" * 21}_#{hex}", nil],
+      "a token without the pp_ prefix" => ["abc_definitely_a_token", nil]
+    }.each do |label, (key, shown_prefix)|
+      it "accepts #{label} with exactly one warning that hides the secret" do
+        expect { validator.validate!(config(api_key: key)) }.not_to raise_error
+        expect(logger).to have_received(:warn).once do |message|
+          expect(message).to include("api_key")
+          expect(message).not_to include(key)
+          expect(message).not_to include(PoliPage::Rails::Test::SECRET)
+          expect(message).to include(shown_prefix) if shown_prefix
+        end
+      end
+    end
+
+    it "accepts a malformed key without a configured logger" do
+      expect { validator.validate!(config(api_key: "pp_sandbox_x", logger: nil)) }.not_to raise_error
     end
   end
 

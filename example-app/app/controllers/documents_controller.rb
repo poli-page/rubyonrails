@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
-# Deliberately does NOT `include PoliPage::Rails::Renderable` — this
-# controller demonstrates direct PoliPage.client use to show both styles
-# work (spec §14.4).
+# show and thumbnails use PoliPage.client directly (a hand-built 302 and
+# JSON) to show that style works without the concern (spec §14.4); preview
+# goes through the Renderable concern's render_preview.
 class DocumentsController < ApplicationController
+  include PoliPage::Rails::Renderable
+
   skip_forgery_protection
 
   # All Poli Page errors surface as JSON with the SDK's typed code +
@@ -30,9 +32,7 @@ class DocumentsController < ApplicationController
 
   # GET /api/documents/:id/preview  — SDK demo step 8
   def preview
-    result = PoliPage.client.documents.preview(params[:id])
-    response.headers["Cache-Control"] = "private, no-store"
-    render body: result.html, content_type: "text/html; charset=utf-8"
+    render_preview(PoliPage.client.documents.preview(params[:id]))
   end
 
   # DELETE /api/documents/:id  — SDK demo step 9
@@ -41,11 +41,13 @@ class DocumentsController < ApplicationController
     head :no_content
   end
 
-  # GET /api/errors/bad-version  — SDK demo step 10
-  def bad_version
+  # GET /api/errors/not-found  — SDK demo step 10
+  # Renders a template that does not exist: the API answers 404
+  # TEMPLATE_NOT_FOUND and render_poli_page_error returns its code, status,
+  # message and requestId.
+  def not_found
     PoliPage.client.render.pdf(
-      project: "getting-started", template: "welcome",
-      version: "not-a-valid-semver", data: {}
+      project: "getting-started", template: "does-not-exist", data: {}
     )
   end
 
