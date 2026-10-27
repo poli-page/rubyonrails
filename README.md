@@ -54,7 +54,7 @@ A key belongs to exactly one environment of your organization and reads `pp_{env
 
 "Counted" means the render counts toward the organization's monthly PDF quota.
 
-The API is the only authority on keys. The gem raises `ConfigurationError` only when `api_key` is missing or empty. A value that does not match `pp_{environment}_{32 lowercase hex}` logs one warning through `config.logger` (showing at most the `pp_{environment}_` part, never the secret), then the client starts anyway and the API answers `401` if the key is wrong (`INVALID_API_KEY`, or `MISSING_API_KEY` for a value without `pp_`).
+The API is the only authority on keys. The gem raises `ConfigurationError` only when `api_key` is missing or empty. A value that does not match `pp_{environment}_{32 lowercase hex}` logs one warning through `config.logger` that names the expected format and shows no part of the key, then the client starts anyway and the API answers `401` if the key is wrong (`INVALID_API_KEY`, or `MISSING_API_KEY` for a value without `pp_`).
 
 ## Quick start
 

@@ -44,7 +44,7 @@ RSpec.describe PoliPage, ".client (lazy memoised accessor)" do
     logger = instance_spy(Logger)
     with_config(api_key: "pp_sandbox_x", logger: logger) do
       expect(described_class.client).to be_a(PoliPage::Client)
-      expect(logger).to have_received(:warn).with(/api_key pp_sandbox_… does not match/).once
+      expect(logger).to have_received(:warn).with(PoliPage::Rails::Test::MALFORMED_KEY_WARNING).once
     end
   end
 

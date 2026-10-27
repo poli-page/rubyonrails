@@ -20,7 +20,6 @@ module PoliPage
     end
 
     module ConfigurationValidator
-      ENVIRONMENT_PREFIX: Regexp
       API_KEY_FORMAT: Regexp
 
       def self.validate!: (Configuration) -> void

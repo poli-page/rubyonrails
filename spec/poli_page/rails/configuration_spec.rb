@@ -87,14 +87,19 @@ RSpec.describe PoliPage::Rails::ConfigurationValidator do
         .to raise_error(PoliPage::Rails::ConfigurationError, /api_key is required/)
     end
 
-    it "rejects empty string" do
+    it "rejects empty string without a warning" do
       expect { validator.validate!(config(api_key: "")) }
-        .to raise_error(PoliPage::Rails::ConfigurationError, /api_key is required/)
+        .to raise_error(PoliPage::Rails::ConfigurationError, /api_key is required/) { |error|
+          expect(error.message).not_to include("pp_")
+        }
+      expect(logger).not_to have_received(:warn)
     end
 
-    it "rejects a non-String value" do
+    it "rejects a non-String value without showing it" do
       expect { validator.validate!(config(api_key: 12_345)) }
-        .to raise_error(PoliPage::Rails::ConfigurationError, /api_key is required/)
+        .to raise_error(PoliPage::Rails::ConfigurationError, /api_key is required/) { |error|
+          expect(error.message).not_to include("12345")
+        }
     end
 
     {
@@ -109,30 +114,31 @@ RSpec.describe PoliPage::Rails::ConfigurationValidator do
       end
     end
 
+    # No part of the key reaches the log, not even a pp_{environment}_ prefix
+    # whose name follows the grammar: a pasted secret fragment can follow it too.
     {
       "a key whose secret is not 32 hex" => %w[pp_sandbox_x pp_sandbox_],
+      "a key whose secret has 31 hex characters" => ["pp_live_#{hex[1..]}", "pp_live_"],
       "a key whose secret has a 33rd hex character" => ["pp_sandbox_#{hex}0", "pp_sandbox_"],
       "a key whose secret is upper-case hex" => ["pp_sandbox_#{hex.upcase}", "pp_sandbox_"],
+      "a key with a hex-fragment environment name" => ["pp_abc123_#{hex[6..]}", "pp_abc123_"],
+      "a malformed key with a hyphenated environment name" => %w[pp_eu-prod_x pp_eu-prod_],
       "a sandbox key with a trailing newline" => ["pp_sandbox_#{hex}\n", "pp_sandbox_"],
-      "a sandbox key after a leading line" => ["x\npp_sandbox_#{hex}", nil],
+      "a sandbox key after a leading line" => ["x\npp_sandbox_#{hex}", "pp_sandbox_"],
       "a malformed key with a 20-character environment name" => ["pp_#{"a" * 20}_x", "pp_#{"a" * 20}_"],
-      "an upper-case environment name" => ["pp_Sandbox_#{hex}", nil],
-      "an environment name starting with a digit" => ["pp_2fa_#{hex}", nil],
-      "an environment name with a double hyphen" => ["pp_a--b_#{hex}", nil],
-      "a 21-character environment name" => ["pp_#{"a" * 21}_#{hex}", nil],
-      "a token without the pp_ prefix" => ["abc_definitely_a_token", nil],
-      "a well-shaped key without the pp_ prefix" => ["sandbox_#{hex}", nil]
-    }.each do |label, (key, shown_prefix)|
-      it "accepts #{label} with exactly one warning that hides the secret" do
+      "an upper-case environment name" => ["pp_Sandbox_#{hex}", "pp_Sandbox_"],
+      "an environment name starting with a digit" => ["pp_2fa_#{hex}", "pp_2fa_"],
+      "an environment name with a double hyphen" => ["pp_a--b_#{hex}", "pp_a--b_"],
+      "a 21-character environment name" => ["pp_#{"a" * 21}_#{hex}", "pp_#{"a" * 21}_"],
+      "a token without the pp_ prefix" => %w[abc_definitely_a_token abc_],
+      "a well-shaped key without the pp_ prefix" => ["sandbox_#{hex}", "sandbox_"]
+    }.each do |label, (key, prefix)|
+      it "accepts #{label} with exactly one warning that shows no key text" do
         expect { validator.validate!(config(api_key: key)) }.not_to raise_error
         expect(logger).to have_received(:warn).once do |message|
-          expect(message).not_to include(key)
-          expect(message).not_to include(PoliPage::Rails::Test::SECRET)
-          if shown_prefix
-            expect(message).to start_with("Poli Page api_key #{shown_prefix}… does not match")
-          else
-            expect(message).to start_with("Poli Page api_key does not match")
-          end
+          expect(message).to eq(PoliPage::Rails::Test::MALFORMED_KEY_WARNING)
+          expect(message).not_to include(key.strip)
+          expect(message).not_to include(prefix)
         end
       end
     end

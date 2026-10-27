@@ -18,8 +18,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `ConfigurationValidator` accepts any environment key. It raises
   `ConfigurationError` only for a missing or empty `api_key`; a value that does
   not match `pp_{environment}_{32 lowercase hex}` logs one warning through
-  `config.logger` (showing at most the `pp_{environment}_` part, never the
-  secret) and the client starts anyway, leaving the verdict to the API.
+  `config.logger` that names the expected format and shows no part of the
+  key, not even its `pp_{environment}_` prefix, and the client starts anyway,
+  leaving the verdict to the API.
   `API_KEY_PATTERN` is replaced by `API_KEY_FORMAT`.
 - `render_preview` now documents `DocumentPreviewResult` (`documents.preview`)
   only.
@@ -41,6 +42,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   DEL, C1) are now stripped from the `Content-Disposition` filename before
   `ActionDispatch::Http::ContentDisposition` formats it, instead of surviving as
   `%0D%0A`-style escapes that clients decode back into the saved filename.
+- Example app: the demo page's status row no longer shows the first 8
+  characters of `POLI_PAGE_API_KEY`; no part of the key is shown.
 
 ## [0.1.0] — 2026-05-27
 

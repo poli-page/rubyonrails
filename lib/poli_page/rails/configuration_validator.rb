@@ -11,8 +11,7 @@ module PoliPage
 
       # pp_{environment}_{32 lowercase hex}. Only drives a startup warning: the
       # API is the authority on keys, so a mismatch never blocks the client.
-      ENVIRONMENT_PREFIX = /\App_(?=[a-z][a-z0-9-]{0,19}_)[a-z][a-z0-9]*(?:-[a-z0-9]+)*_/
-      API_KEY_FORMAT = /#{ENVIRONMENT_PREFIX.source}[0-9a-f]{32}\z/
+      API_KEY_FORMAT = /\App_(?=[a-z][a-z0-9-]{0,19}_)[a-z][a-z0-9]*(?:-[a-z0-9]+)*_[0-9a-f]{32}\z/
 
       def validate!(config)
         validate_api_key!(config.api_key, config.logger)
@@ -32,11 +31,11 @@ module PoliPage
         end
         return if API_KEY_FORMAT.match?(value)
 
-        # Only the pp_{environment}_ part may reach the log, never the secret.
-        shown = value[ENVIRONMENT_PREFIX]
-        subject = shown ? "api_key #{shown}…" : "api_key"
-        logger&.warn("Poli Page #{subject} does not match pp_{environment}_{32 lowercase hex}; " \
-                     "starting anyway, the API will reject it if it is not a valid key.")
+        # No part of the key reaches the log: even a well-formed pp_{environment}_
+        # can be a pasted secret fragment.
+        logger&.warn("Poli Page api_key does not match the expected format " \
+                     "pp_{environment}_{32 lowercase hex characters}; starting anyway, " \
+                     "the API will reject it if it is not a valid key.")
       end
 
       def validate_base_url!(value)
