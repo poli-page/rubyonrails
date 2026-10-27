@@ -113,6 +113,8 @@ RSpec.describe PoliPage::Rails::ConfigurationValidator do
       "a key whose secret is not 32 hex" => %w[pp_sandbox_x pp_sandbox_],
       "a key whose secret has a 33rd hex character" => ["pp_sandbox_#{hex}0", "pp_sandbox_"],
       "a key whose secret is upper-case hex" => ["pp_sandbox_#{hex.upcase}", "pp_sandbox_"],
+      "a sandbox key with a trailing newline" => ["pp_sandbox_#{hex}\n", "pp_sandbox_"],
+      "a sandbox key after a leading line" => ["x\npp_sandbox_#{hex}", nil],
       "a malformed key with a 20-character environment name" => ["pp_#{"a" * 20}_x", "pp_#{"a" * 20}_"],
       "an upper-case environment name" => ["pp_Sandbox_#{hex}", nil],
       "an environment name starting with a digit" => ["pp_2fa_#{hex}", nil],
