@@ -15,8 +15,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (`503` for `network_error`, `504` for `timeout`), or `500` with
   `"status": null` when the status is unknown, always as `application/json`. Set
   `config.poli_page.error_handler = false` to leave it out. An error raised
-  after a response is committed (an `ActionController::Live` stream that sent
-  its first chunk) is raised again, for Live to log and report.
+  after a response is committed (an `ActionController::Live` stream that wrote
+  its first chunk or was closed) is raised again, for Live to log and report;
+  close a Live stream only once it has written, or an error before the first
+  byte ends as an empty `200`.
 - The API contract's integration cases (`spec/contract`), run in CI against
   the example app on every Ruby and Rails version of the matrix, with the
   contract pinned to v1.3.0 by the `poli-page/api-contract` action.

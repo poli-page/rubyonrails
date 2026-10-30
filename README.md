@@ -169,7 +169,14 @@ The gem answers every `PoliPage::Error` a controller action raises without rescu
 - The `Content-Type` is `application/json`, even when the action had set another one (a PDF route, say) before the error.
 - The keys are fixed: your app's inflections (an `ID` acronym, for example) do not change them.
 
-The handler cannot answer once a response is committed, for example an `ActionController::Live` stream that already sent PDF bytes: it raises the error again, so Live logs it and calls the stream's `on_error`. The client then gets a short `200` (the PDF cut where the error happened); compare the bytes received with the descriptor's `sizeBytes` if you need to detect it. Set the PDF headers and write the first chunk only after the SDK call has started (as the example app's `StreamsController` does), so that errors before the first byte still get the JSON answer.
+The handler cannot answer once a response is committed: an `ActionController::Live` stream is committed when it writes its first chunk or when it is closed. The handler then raises the error again, so Live logs it and calls the stream's `on_error`. After PDF bytes went out, the client gets a short `200` (the PDF cut where the error happened); compare the bytes received with the descriptor's `sizeBytes` if you need to detect it.
+
+So that an error before the first byte still gets the JSON answer, in a Live action:
+
+- set the PDF headers and write the first chunk only after the SDK call has started;
+- close the stream only once you have written to it (`ensure response.stream.close if started`). The usual unconditional `ensure response.stream.close` commits an empty `200` before the handler runs, and the error then ends as that empty `200`.
+
+The example app's `StreamsController` does both.
 
 A `rescue_from` in your own controllers (for `PoliPage::Error`, one of its subclasses, or `StandardError`) takes precedence, as usual in Rails. To leave the handler out entirely:
 
