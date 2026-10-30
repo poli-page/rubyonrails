@@ -8,15 +8,10 @@ require "action_view/railtie"
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
-# Load the workspace-root .env shared with the sibling integrations,
-# falling back to per-app .env. Real shell exports always win
-# (Dotenv.load — not overload).
+# Load .env.local, then .env, from the app directory. Real shell exports
+# always win (Dotenv.load — not overload).
 require "dotenv"
-Dotenv.load(
-  File.expand_path("../../../symfony-bundle/.env", __dir__),
-  ".env.local",
-  ".env"
-)
+Dotenv.load(".env.local", ".env")
 
 module ExampleApp
   class Application < Rails::Application

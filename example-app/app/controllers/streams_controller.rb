@@ -4,13 +4,13 @@
 # out from RendersController because ActionController::Live changes the
 # request lifecycle for ALL actions on the including controller (per-action
 # threading), which makes mixing it with normal render_pdf / render_preview
-# awkward. Spec §11.4 calls this out as the safer split.
+# awkward, so this controller keeps it apart.
 class StreamsController < ApplicationController
   include ActionController::Live
 
   skip_forgery_protection
 
-  # GET /api/render/stream  — SDK demo step 2
+  # GET /render/stream  — SDK demo step 2
   def stream
     response.headers["Content-Type"]           = "application/pdf"
     response.headers["Content-Disposition"]    = PoliPage::Rails::FilenameEncoder.disposition(
