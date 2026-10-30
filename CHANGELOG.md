@@ -6,8 +6,48 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-30
+
+First release. The version starts at 0.11.0 to match the `poli-page` SDK
+release it requires; the 0.1.0 development line was never published.
+
 ### Added
 
+- Rails engine + Railtie wrapping the official `poli-page` Ruby SDK.
+- `PoliPage.client` — lazy memoised class-level accessor (Monitor-guarded;
+  shared across threads per the SDK's thread-safety guarantee).
+  `PoliPage.reset_client!` clears the memo (test-only).
+- `Rails.application.config.poli_page` — `Configuration` object exposing every
+  SDK kwarg as an `attr_accessor` plus a `notifications` opt-out switch.
+  `to_client_kwargs.compact` lets the SDK's own defaults apply for `nil` keys.
+- `PoliPage::Rails::ConfigurationValidator` — validates `api_key` (see
+  Changed), `base_url` (http/https), `timeout`
+  (1..600), `max_retries` (0..10), `retry_delay` (0..30), `notifications`
+  (boolean), and `on_retry` / `on_error` (callable). Runs lazily on first
+  `PoliPage.client` call — keeps `assets:precompile` and `db:create` working
+  in containers without secrets at boot.
+- `PoliPage::Rails::Renderable` — controller concern providing `render_pdf`,
+  `render_preview`, `redirect_to_document`. Sets `Cache-Control: private,
+  no-store`, `X-Content-Type-Options: nosniff`, and an RFC 5987 / RFC 6266
+  `Content-Disposition` that handles ASCII + non-ASCII filenames (`résumé.pdf`,
+  `発票.pdf`, `🦀.pdf`).
+- `PoliPage::Rails::FilenameEncoder` — thin wrapper over
+  `ActionDispatch::Http::ContentDisposition.format`; single seam if Rails
+  changes the formatting API across versions.
+- `ActiveSupport::Notifications` bridge for the SDK's retry/error hooks
+  (`poli_page.retry`, `poli_page.error`). **Default-on**, opt-out via
+  `c.notifications = false`. Zero overhead with no subscribers.
+- `rails generate poli_page:install` — writes
+  `config/initializers/poli_page.rb` with a commented template documenting
+  every configuration key. Zero custom options to avoid Thor-reserved-name
+  shadowing (`--force`, `--skip`, `--pretend`, `--quiet`, etc.).
+- Example Rails 8 app at [`example-app/`](./example-app) with an interactive
+  single-page demo UI covering every SDK method (`render.pdf`,
+  `render.pdf_stream`, `render.document`, `documents.get`,
+  `documents.thumbnails`, `documents.preview`, `documents.delete`, an
+  error demo, and a `bin/rake demo:render_to_file` task for
+  `render_to_file`).
+- RBS signatures in `sig/` mirroring the public API surface.
 - A default error handler, on by default: `PoliPage::Rails::ErrorHandler` is
   included into `ActionController::Base` and `ActionController::API` and
   answers every unrescued `PoliPage::Error` with the SDK's `to_payload` as JSON
@@ -24,8 +64,6 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   contract pinned to v1.3.0 by the `poli-page/api-contract` action.
 
 ### Changed
-
-- CI: the live API job runs on `main` (and on demand) against the production API with the sandbox key from the `POLI_PAGE_API_KEY` secret, and skips with a notice when the key is absent or not a `pp_sandbox_` key.
 
 - **Breaking:** requires the `poli-page` SDK 0.11.0 (`~> 0.11`), the first
   release with environment keys and without template versions. Render calls
@@ -55,6 +93,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   or a network error before that answers through the default error handler
   (JSON, its own status) instead of a `200 application/pdf`.
 - The integration spec runs only with a `pp_sandbox_` key.
+- CI: the live API job runs on `main` (and on demand) against the production API with the sandbox key from the `POLI_PAGE_API_KEY` secret, and skips with a notice when the key is absent or not a `pp_sandbox_` key.
 
 ### Removed
 
@@ -72,46 +111,5 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Example app: the demo page's status row no longer shows the first 8
   characters of `POLI_PAGE_API_KEY`; no part of the key is shown.
 
-## [0.1.0] — 2026-05-27
-
-### Added
-
-- Initial release. Rails engine + Railtie wrapping the official `poli-page`
-  Ruby SDK.
-- `PoliPage.client` — lazy memoised class-level accessor (Monitor-guarded;
-  shared across threads per the SDK's thread-safety guarantee).
-  `PoliPage.reset_client!` clears the memo (test-only).
-- `Rails.application.config.poli_page` — `Configuration` object exposing every
-  SDK kwarg as an `attr_accessor` plus a `notifications` opt-out switch.
-  `to_client_kwargs.compact` lets the SDK's own defaults apply for `nil` keys.
-- `PoliPage::Rails::ConfigurationValidator` — validates `api_key`
-  (`pp_test_` / `pp_live_` prefix), `base_url` (http/https), `timeout`
-  (1..600), `max_retries` (0..10), `retry_delay` (0..30), `notifications`
-  (boolean), and `on_retry` / `on_error` (callable). Runs lazily on first
-  `PoliPage.client` call — keeps `assets:precompile` and `db:create` working
-  in containers without secrets at boot.
-- `PoliPage::Rails::Renderable` — controller concern providing `render_pdf`,
-  `render_preview`, `redirect_to_document`. Sets `Cache-Control: private,
-  no-store`, `X-Content-Type-Options: nosniff`, and an RFC 5987 / RFC 6266
-  `Content-Disposition` that handles ASCII + non-ASCII filenames (`résumé.pdf`,
-  `発票.pdf`, `🦀.pdf`).
-- `PoliPage::Rails::FilenameEncoder` — thin wrapper over
-  `ActionDispatch::Http::ContentDisposition.format`; single seam if Rails
-  changes the formatting API across versions.
-- `ActiveSupport::Notifications` bridge for the SDK's retry/error hooks
-  (`poli_page.retry`, `poli_page.error`). **Default-on**, opt-out via
-  `c.notifications = false`. Zero overhead with no subscribers.
-- `rails generate poli_page:install` — writes
-  `config/initializers/poli_page.rb` with a commented template documenting
-  every configuration key. Zero custom options to avoid Thor-reserved-name
-  shadowing (`--force`, `--skip`, `--pretend`, `--quiet`, etc.).
-- Example Rails 8 app at [`example-app/`](./example-app) with an interactive
-  single-page demo UI covering every SDK method (`render.pdf`,
-  `render.pdf_stream`, `render.preview`, `render.document`, `documents.get`,
-  `documents.thumbnails`, `documents.preview`, `documents.delete`, a
-  deliberate `ValidationError` trigger, and a `bin/rake demo:render_to_file`
-  task for `render_to_file`).
-- RBS signatures in `sig/` mirroring the public API surface.
-
-[Unreleased]: https://github.com/poli-page/rails/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/poli-page/rails/releases/tag/v0.1.0
+[Unreleased]: https://github.com/poli-page/rubyonrails/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/poli-page/rubyonrails/releases/tag/v0.11.0
