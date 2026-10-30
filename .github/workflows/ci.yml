@@ -3,6 +3,7 @@ on:
   push:
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -59,18 +60,34 @@ jobs:
 
   integration:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     steps:
+      - name: Check for the sandbox API key
+        id: key
+        env:
+          POLI_PAGE_API_KEY: ${{ secrets.POLI_PAGE_API_KEY }}
+        run: |
+          case "$POLI_PAGE_API_KEY" in
+            pp_sandbox_*) echo "present=true" >> "$GITHUB_OUTPUT" ;;
+            *)
+              echo "::notice::POLI_PAGE_API_KEY is not set or is not a pp_sandbox_ key: skipping the live API test."
+              echo "present=false" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
       - uses: actions/checkout@v4
+        if: steps.key.outputs.present == 'true'
       - uses: ruby/setup-ruby@v1
+        if: steps.key.outputs.present == 'true'
         with:
           ruby-version: '3.3'
           bundler-cache: true
       - name: API contract
         id: contract
+        if: steps.key.outputs.present == 'true'
         uses: poli-page/api-contract@0eba96c1ecf9a28b7e259f444f3ca5b7c059d5fd # v1.3.0
-      - name: Integration spec against the Poli Page API
+      - name: Live API spec (prod, sandbox key)
+        if: steps.key.outputs.present == 'true'
         env:
-          POLI_PAGE_API_KEY: ${{ secrets.POLI_PAGE_DEVELOP_API_KEY }}
+          POLI_PAGE_API_KEY: ${{ secrets.POLI_PAGE_API_KEY }}
           POLI_CONTRACT: ${{ steps.contract.outputs.path }}
         run: bundle exec rspec spec/integration
