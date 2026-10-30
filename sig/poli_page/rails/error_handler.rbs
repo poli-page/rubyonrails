@@ -1,0 +1,14 @@
+module PoliPage
+  module Rails
+    module ErrorHandler
+      extend ActiveSupport::Concern
+
+      def self.body: (PoliPage::Error error) -> Hash[String, untyped]
+      def self.status: (PoliPage::Error error) -> Integer
+
+      private
+
+      def render_poli_page_error: (PoliPage::Error error) -> void
+    end
+  end
+end

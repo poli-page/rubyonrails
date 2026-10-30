@@ -83,6 +83,14 @@ module PoliPage
         raise ConfigurationError, "Poli Page notifications must be true or false (got #{value.inspect})."
       end
 
+      # Checked at boot by the Railtie, when it decides whether to install the
+      # error handler (not in validate!, which runs when the client is built).
+      def validate_error_handler!(value)
+        return if value.is_a?(TrueClass) || value.is_a?(FalseClass)
+
+        raise ConfigurationError, "Poli Page error_handler must be true or false (got #{value.inspect})."
+      end
+
       def validate_callable!(value, name)
         return if value.nil?
         return if value.respond_to?(:call) && !value.is_a?(String) && !value.is_a?(Symbol)

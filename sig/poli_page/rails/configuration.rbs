@@ -14,6 +14,7 @@ module PoliPage
       attr_accessor ca_file: String?
       attr_accessor ca_path: String?
       attr_accessor notifications: bool
+      attr_accessor error_handler: bool
 
       def initialize: () -> void
       def to_client_kwargs: () -> Hash[Symbol, untyped]
@@ -29,6 +30,7 @@ module PoliPage
       def self.validate_max_retries!: (untyped) -> void
       def self.validate_retry_delay!: (untyped) -> void
       def self.validate_notifications!: (untyped) -> void
+      def self.validate_error_handler!: (untyped) -> void
       def self.validate_callable!: (untyped, String) -> void
     end
   end

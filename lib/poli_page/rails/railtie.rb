@@ -2,6 +2,8 @@
 
 require "rails/railtie"
 
+require_relative "configuration_validator"
+require_relative "error_handler"
 require_relative "notifications"
 
 module PoliPage
@@ -15,6 +17,20 @@ module PoliPage
         # runs AFTER this (we use before: :load_config_initializers) and
         # mutates the existing Configuration object, it never reassigns.
         app.config.poli_page = Configuration.new
+      end
+
+      # Runs after config/initializers/*.rb, so `config.poli_page.error_handler
+      # = false` there turns it off. The on_load hook includes the concern into
+      # ActionController::Base and ActionController::API when they load, before
+      # any application controller inherits from them.
+      initializer "poli_page.error_handler", after: :load_config_initializers do |app|
+        enabled = app.config.poli_page.error_handler
+        ConfigurationValidator.validate_error_handler!(enabled)
+        next unless enabled
+
+        ::ActiveSupport.on_load(:action_controller) do
+          include PoliPage::Rails::ErrorHandler
+        end
       end
 
       config.after_initialize do |app|

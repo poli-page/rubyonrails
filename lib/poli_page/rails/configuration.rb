@@ -7,7 +7,7 @@ module PoliPage
                     :max_retries, :retry_delay,
                     :logger, :on_retry, :on_error,
                     :proxy, :ca_file, :ca_path,
-                    :notifications
+                    :notifications, :error_handler
 
       def initialize
         @api_key       = nil
@@ -23,6 +23,7 @@ module PoliPage
         @ca_file       = nil
         @ca_path       = nil
         @notifications = true
+        @error_handler = true
       end
 
       # Single source of truth for SDK kwargs. Compact drops every nil entry,

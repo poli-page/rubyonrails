@@ -31,6 +31,12 @@ Rails.application.config.poli_page.tap do |c|
   # The bridge is default-on; it costs nothing when no subscribers attach.
   # c.notifications = false
 
+  # Optional — set to false to remove the default error handler. It answers
+  # every PoliPage::Error a controller raises with JSON
+  # { code, message, status, requestId } (the SDK's to_payload) and the
+  # payload's status, or 500 when the status is unknown.
+  # c.error_handler = false
+
   # Optional — custom retry/error callables. Setting these REPLACES the
   # ActiveSupport::Notifications bridge entirely (you opt out of the default
   # bridge by providing your own callable). To preserve the bridge AND add

@@ -279,6 +279,20 @@ RSpec.describe PoliPage::Rails::ConfigurationValidator do
     end
   end
 
+  context "with error_handler" do
+    it "accepts true and false" do
+      expect { validator.validate_error_handler!(true) }.not_to raise_error
+      expect { validator.validate_error_handler!(false) }.not_to raise_error
+    end
+
+    it "rejects nil and truthy non-boolean values" do
+      expect { validator.validate_error_handler!(nil) }
+        .to raise_error(PoliPage::Rails::ConfigurationError, /error_handler must be true or false/)
+      expect { validator.validate_error_handler!("yes") }
+        .to raise_error(PoliPage::Rails::ConfigurationError, /error_handler must be true or false/)
+    end
+  end
+
   context "with on_retry / on_error" do
     it "accepts nil" do
       expect { validator.validate!(config(on_retry: nil, on_error: nil)) }.not_to raise_error
