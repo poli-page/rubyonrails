@@ -12,7 +12,7 @@ RSpec.describe "Rendering against the develop API", :integration do
     config = Rails.application.config.poli_page
     snapshot = { api_key: config.api_key, base_url: config.base_url }
 
-    config.api_key  = ENV.fetch("POLI_PAGE_API_KEY")
+    config.api_key = ENV.fetch("POLI_PAGE_API_KEY")
     PoliPage.reset_client!
 
     bytes = PoliPage.client.render.pdf(
