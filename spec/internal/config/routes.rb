@@ -7,6 +7,7 @@ Rails.application.routes.draw do
   get "error_handler_test/pdf_first",   to: "error_handler_test#pdf_first"
   get "error_handler_test/:kind",       to: "error_handler_test#show"
   get "error_handler_live_test",        to: "error_handler_live_test#stream"
+  get "error_handler_live_midstream",   to: "error_handler_live_midstream_test#stream"
   get "error_handler_api_test",         to: "error_handler_api_test#show"
 end
 

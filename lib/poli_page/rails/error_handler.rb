@@ -33,9 +33,11 @@ module PoliPage
         rescue_from ::PoliPage::Error, with: :render_poli_page_error
       end
 
-      # The JSON body for `error`: its to_payload with the wire's key names.
+      # The JSON body for `error`: its to_payload with the wire's key names,
+      # always exactly these four keys (a key a later SDK adds is left out).
       def self.body(error)
-        error.to_payload.to_h { |key, value| [WIRE_KEYS.fetch(key), value] }
+        payload = error.to_payload
+        WIRE_KEYS.to_h { |key, wire| [wire, payload[key]] }
       end
 
       # The HTTP status for `error`: the payload's status, or 500 when unknown.
@@ -45,10 +47,17 @@ module PoliPage
 
       private
 
+      # A response already committed (an ActionController::Live stream that
+      # sent its first chunk) cannot change its status or body: the error is
+      # raised again so Live logs it and calls the stream's on_error, instead
+      # of being reported as an answer that was never sent.
+      #
       # Why JSON.generate: the body holds only strings, integers and nil, and
       # it keeps the answer independent of ActiveSupport's JSON encoder (whose
       # Rails 7.0, 7.1 and 8.0 releases pass an option the json 3 gem refuses).
       def render_poli_page_error(error)
+        raise error if response.committed?
+
         render json: JSON.generate(ErrorHandler.body(error)),
                status: ErrorHandler.status(error),
                content_type: "application/json"

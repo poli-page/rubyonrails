@@ -28,7 +28,11 @@ RSpec.describe "Example app: GET /render/stream", type: :request do
 
   def stream_with(responses)
     server = PoliPage::Rails::Test::ContractMockServer.new { |origin| responses.call(origin) }
-    send_case_request({ "method" => "GET", "path" => "/render/stream" }, server.origin)
+    with_example_app_config(PoliPage::Rails::Test::SANDBOX_KEY, server.origin) do
+      # HTTP/1.1: Rails serves ActionController::Live as a plain response to
+      # HTTP/1.0, the test client's default.
+      get "/render/stream", env: { "SERVER_PROTOCOL" => "HTTP/1.1" }, headers: { "Accept" => "application/pdf" }
+    end
     server.close
     server.requests
   ensure

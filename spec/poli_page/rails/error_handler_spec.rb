@@ -10,6 +10,12 @@ RSpec.describe PoliPage::Rails::ErrorHandler, type: :request do
     JSON.parse(response.body)
   end
 
+  # Rails serves ActionController::Live as a plain response to HTTP/1.0, the
+  # test client's default protocol; HTTP/1.1 gets the real Live stream.
+  def get_live(path, accept: "application/pdf")
+    get path, env: { "SERVER_PROTOCOL" => "HTTP/1.1" }, headers: { "Accept" => accept }
+  end
+
   describe "on by default" do
     it "defaults config.poli_page.error_handler to true" do
       expect(PoliPage::Rails::Configuration.new.error_handler).to be(true)
@@ -81,6 +87,25 @@ RSpec.describe PoliPage::Rails::ErrorHandler, type: :request do
       expect(json_body["code"]).to eq("network_error")
     end
 
+    it "re-raises an error after a Live stream sent its first chunk, for Live to report" do
+      ErrorHandlerLiveMidstreamTestController::REPORTED.clear
+      get_live "/error_handler_live_midstream"
+
+      expect(response).to have_http_status(200)
+      expect(response.media_type).to eq("application/pdf")
+      expect(response.body).to eq("%PDF-1.4 partial")
+      expect(ErrorHandlerLiveMidstreamTestController::REPORTED.size).to eq(1)
+    end
+
+    it "keeps exactly the four wire keys when the SDK payload has another key" do
+      error = PoliPage::ConnectionError.new
+      def error.to_payload = super.merge(retry_after: 3)
+
+      expect(described_class.body(error)).to eq(
+        "code" => "network_error", "message" => "Network request failed", "status" => 503, "requestId" => nil
+      )
+    end
+
     it "builds the body from the SDK's to_payload, renaming request_id to requestId" do
       error = PoliPage::NotFoundError.new("m", code: "C", status: 404, request_id: "req_1")
       payload = error.to_payload
@@ -100,7 +125,7 @@ RSpec.describe PoliPage::Rails::ErrorHandler, type: :request do
     end
 
     it "answers application/json from an ActionController::Live action that set a PDF Content-Type first" do
-      get "/error_handler_live_test"
+      get_live "/error_handler_live_test"
 
       expect(response).to have_http_status(503)
       expect(response.media_type).to eq("application/json")
