@@ -6,7 +6,7 @@ gemspec
 
 group :development, :test do
   gem "rake",        "~> 13.2"
-  gem "rspec-rails", "~> 6.1"
+  gem "rspec-rails", "~> 8.0"
   gem "combustion",  "~> 1.5"
   gem "appraisal",   "~> 2.5"
   gem "rubocop",             require: false
