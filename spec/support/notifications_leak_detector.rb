@@ -8,7 +8,7 @@ module PoliPage
       # Snapshots ActiveSupport::Notifications subscriber counts for poli_page.*
       # event names. If a spec leaks a subscriber (forgets to unsubscribe), we
       # catch it in the after(:each) assertion rather than discovering it as
-      # cross-spec interference much later. CLAUDE.md §10.2.
+      # cross-spec interference much later.
       module NotificationsLeakDetector
         EVENTS = %w[poli_page.retry poli_page.error].freeze
 

@@ -66,8 +66,7 @@ build-iPhoneSimulator/
 
 # Local .env (contains secrets — POLI_PAGE_API_KEY). Real shell exports
 # always win at runtime; this file is for convenience only and must never
-# be committed. The workspace-root .env at ../symfony-bundle/.env is the
-# shared source of truth (see CLAUDE.md §10.3).
+# be committed.
 /.env
 /.env.local
 CLAUDE.md

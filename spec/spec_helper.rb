@@ -2,17 +2,10 @@
 
 require "dotenv"
 
-# Why: single root .env across the entire integrations workspace (no per-app
-# .env.local). Real shell exports always win — Dotenv.load (not Dotenv.overload)
-# only sets vars not already present.
-#
-# Workspace root: /Users/mickael/Projects/symfony-bundle/.env is the de-facto
-# shared root (the symfony-bundle was scaffolded first and owns the file).
-Dotenv.load(
-  File.expand_path("../../symfony-bundle/.env", __dir__),
-  ".env.local",
-  ".env"
-)
+# Why: a local .env.local or .env (both gitignored) can hold POLI_PAGE_API_KEY
+# for the integration spec. Real shell exports always win — Dotenv.load (not
+# Dotenv.overload) only sets vars not already present.
+Dotenv.load(".env.local", ".env")
 
 RSpec.configure do |config|
   config.example_status_persistence_file_path = ".rspec_status"

@@ -6,7 +6,7 @@ module PoliPage
       # Snapshots Signal.trap('INT') / Signal.trap('TERM') handlers per spec.
       # Rails.application.initialize! (called by combustion) and various
       # framework boot paths can leave signal handlers installed; this support
-      # module restores the snapshot in after(:each). CLAUDE.md §10.2.
+      # module restores the snapshot in after(:each).
       module RestoresGlobalHandlers
         SIGNALS = %w[INT TERM].freeze
 
