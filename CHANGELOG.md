@@ -6,6 +6,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- The live API CI job passes the optional `POLI_PAGE_BASE_URL` secret to the integration spec (unset: the SDK default), next to the `pp_sandbox_` key in `POLI_PAGE_API_KEY`. The spec sets `config.base_url` from `POLI_PAGE_BASE_URL` when it is set.
+
 ## [0.11.0] - 2026-10-30
 
 First release. The version starts at 0.11.0 to match the `poli-page` SDK

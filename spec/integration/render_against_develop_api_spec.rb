@@ -13,6 +13,9 @@ RSpec.describe "Rendering against the develop API", :integration do
     snapshot = { api_key: config.api_key, base_url: config.base_url }
 
     config.api_key = ENV.fetch("POLI_PAGE_API_KEY")
+    # The SDK default API, unless the live job sets POLI_PAGE_BASE_URL.
+    base_url = ENV["POLI_PAGE_BASE_URL"].to_s
+    config.base_url = base_url unless base_url.empty?
     PoliPage.reset_client!
 
     bytes = PoliPage.client.render.pdf(
