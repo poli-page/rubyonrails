@@ -14,21 +14,23 @@ module PoliPage
       attr_accessor ca_file: String?
       attr_accessor ca_path: String?
       attr_accessor notifications: bool
+      attr_accessor error_handler: bool
 
       def initialize: () -> void
       def to_client_kwargs: () -> Hash[Symbol, untyped]
     end
 
     module ConfigurationValidator
-      API_KEY_PATTERN: Regexp
+      API_KEY_FORMAT: Regexp
 
       def self.validate!: (Configuration) -> void
-      def self.validate_api_key!: (untyped) -> void
+      def self.validate_api_key!: (untyped, untyped logger) -> void
       def self.validate_base_url!: (untyped) -> void
       def self.validate_timeout!: (untyped) -> void
       def self.validate_max_retries!: (untyped) -> void
       def self.validate_retry_delay!: (untyped) -> void
       def self.validate_notifications!: (untyped) -> void
+      def self.validate_error_handler!: (untyped) -> void
       def self.validate_callable!: (untyped, String) -> void
     end
   end

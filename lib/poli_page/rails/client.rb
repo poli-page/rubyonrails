@@ -21,9 +21,8 @@ module PoliPage
 
   module Rails
     # Holds the lazy memoised PoliPage::Client. Thread-safe via a Monitor.
-    # The SDK documents Client as thread-safe (sdk-ruby/lib/poli_page/client.rb
-    # thread-safety note), so memoising a single instance and sharing it across
-    # threads is correct.
+    # The SDK documents PoliPage::Client as thread-safe, so memoising a single
+    # instance and sharing it across threads is correct.
     module Client
       LOCK = Monitor.new
       private_constant :LOCK

@@ -14,7 +14,7 @@ module PoliPage
       # inherits Thor-reserved flags (--force, --pretend, --quiet, --skip,
       # --skip-namespace, --skip-collision-check). Defining a custom option
       # with any of those names would silently shadow them and make the
-      # generator appear broken. CLAUDE.md §10.1.
+      # generator appear broken.
 
       argument :initializer_path, type: :string, required: false,
                                   default: "config/initializers/poli_page.rb",

@@ -4,9 +4,8 @@ require "rails_helper"
 
 RSpec.describe "Rendering against the develop API", :integration do
   before do
-    skip "POLI_PAGE_API_KEY not set" if ENV["POLI_PAGE_API_KEY"].to_s.empty?
-    skip "Refusing to run integration spec with a pp_live_* key (safety belt)" \
-      if ENV["POLI_PAGE_API_KEY"].to_s.start_with?("pp_live_")
+    # Test-only guard: never spend a counted environment's quota from CI.
+    skip "POLI_PAGE_API_KEY is not a pp_sandbox_ key" unless ENV["POLI_PAGE_API_KEY"].to_s.start_with?("pp_sandbox_")
   end
 
   it "renders the canonical getting-started/welcome template" do
@@ -20,7 +19,6 @@ RSpec.describe "Rendering against the develop API", :integration do
     bytes = PoliPage.client.render.pdf(
       project:  "getting-started",
       template: "welcome",
-      version:  "1.0.0",
       data:     { name: "Rails CI" }
     )
 

@@ -6,7 +6,7 @@ gem "rails", "~> 8.0"
 gem "puma",  "~> 6.4"
 
 gem "poli_page-rails", path: "../"
-gem "poli-page",       path: "../../sdk-ruby"
+gem "poli-page",       "~> 0.11"
 
 gem "dotenv-rails", "~> 3.1"
 

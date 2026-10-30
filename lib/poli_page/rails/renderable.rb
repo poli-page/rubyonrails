@@ -30,7 +30,7 @@ module PoliPage
         response.headers["X-Content-Type-Options"] = "nosniff"
       end
 
-      # Renders the .html attribute of a PreviewResult or DocumentPreviewResult.
+      # Renders the .html attribute of a DocumentPreviewResult (documents.preview).
       # The HTML is a complete document from the Poli Page render pipeline; use
       # render body: to skip template processing and layouts entirely — no
       # html_safe needed (Rails only escapes inside templates, not for body:).

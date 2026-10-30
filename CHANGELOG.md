@@ -6,12 +6,69 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- A default error handler, on by default: `PoliPage::Rails::ErrorHandler` is
+  included into `ActionController::Base` and `ActionController::API` and
+  answers every unrescued `PoliPage::Error` with the SDK's `to_payload` as JSON
+  `{ "code", "message", "status", "requestId" }` and the payload's status
+  (`503` for `network_error`, `504` for `timeout`), or `500` with
+  `"status": null` when the status is unknown, always as `application/json`. Set
+  `config.poli_page.error_handler = false` to leave it out. An error raised
+  after a response is committed (an `ActionController::Live` stream that wrote
+  its first chunk or was closed) is raised again, for Live to log and report;
+  close a Live stream only once it has written, or an error before the first
+  byte ends as an empty `200`.
+- The API contract's integration cases (`spec/contract`), run in CI against
+  the example app on every Ruby and Rails version of the matrix, with the
+  contract pinned to v1.3.0 by the `poli-page/api-contract` action.
+
+### Changed
+
+- **Breaking:** requires the `poli-page` SDK 0.11.0 (`~> 0.11`), the first
+  release with environment keys and without template versions. Render calls
+  take no `version:`: a key belongs to one environment
+  (`pp_{environment}_{32 lowercase hex}`, for example `pp_sandbox_…`,
+  `pp_live_…`, `pp_staging_…`), and the key alone selects the environment and
+  so the published copy that renders.
+- `ConfigurationValidator` accepts any environment key. It raises
+  `ConfigurationError` only for a missing or empty `api_key`; a value that does
+  not match `pp_{environment}_{32 lowercase hex}` logs one warning through
+  `config.logger` that names the expected format and shows no part of the
+  key, not even its `pp_{environment}_` prefix, and the client starts anyway,
+  leaving the verdict to the API.
+  `API_KEY_PATTERN` is replaced by `API_KEY_FORMAT`.
+- `render_preview` now documents `DocumentPreviewResult` (`documents.preview`)
+  only.
+- Example app: the demo routes move from `/api/*` to the demo-contract
+  paths (`GET /render/pdf`, `GET /documents/:id`, `GET /errors/not-found`, …).
+  `GET /api/errors/bad-version` (`INVALID_VERSION_FORMAT`) is replaced by
+  `GET /errors/not-found`, which renders the template `does-not-exist` and,
+  through the default error handler, answers `404 TEMPLATE_NOT_FOUND` with the
+  error's code, message, status and request id. `GET /documents/:id/preview`
+  now goes through `render_preview`. `GET /documents/:id` still answers a
+  `302` to the presigned PDF URL.
+- Example app: `GET /render/stream` sets its PDF headers when the first chunk
+  arrives, after the render and the start of the download, so a render error
+  or a network error before that answers through the default error handler
+  (JSON, its own status) instead of a `200 application/pdf`.
+- The integration spec runs only with a `pp_sandbox_` key.
+
+### Removed
+
+- Example app: `GET /api/render/preview` (`render.preview`) and its "HTML
+  preview" button; the SDK no longer has `render.preview`.
+- Example app: `DocumentsController`'s own `rescue_from PoliPage::Error`; the
+  default error handler answers instead.
+
 ### Fixed
 
 - `render_pdf` / `FilenameEncoder.disposition`: control characters (CR/LF, TAB,
   DEL, C1) are now stripped from the `Content-Disposition` filename before
   `ActionDispatch::Http::ContentDisposition` formats it, instead of surviving as
   `%0D%0A`-style escapes that clients decode back into the saved filename.
+- Example app: the demo page's status row no longer shows the first 8
+  characters of `POLI_PAGE_API_KEY`; no part of the key is shown.
 
 ## [0.1.0] — 2026-05-27
 

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Non-streaming demo endpoints — SDK demo steps 1, 4, 5.
+# Non-streaming demo endpoints — SDK demo steps 1, 3, 5.
 # The streaming endpoint (step 2) lives in StreamsController because
 # ActionController::Live alters the entire controller's request lifecycle.
 class RendersController < ApplicationController
@@ -11,26 +11,20 @@ class RendersController < ApplicationController
   # use signed JWTs anyway. Skip the framework-default CSRF check.
   skip_forgery_protection
 
-  # GET /api/render/pdf  — SDK demo step 1
+  # GET /render/pdf  — SDK demo step 1
   def pdf
     bytes = PoliPage.client.render.pdf(**canonical_kwargs)
     render_pdf(bytes, filename: "welcome.pdf", inline: true)
   end
 
-  # GET /api/render/preview  — SDK demo step 4
-  def preview
-    result = PoliPage.client.render.preview(**canonical_kwargs)
-    render_preview(result)
-  end
-
-  # POST /api/documents  — SDK demo step 5
+  # POST /documents  — SDK demo step 5
   def document
     descriptor = PoliPage.client.render.document(**canonical_kwargs)
     warm_up_preview_and_thumbnails(descriptor.document_id)
     render json: descriptor.to_h
   end
 
-  # POST /api/render/file  — SDK demo step 3 (render_to_file)
+  # POST /render/file  — SDK demo step 3 (render_to_file)
   # Streams the PDF straight to disk under tmp/poli-page/welcome.pdf —
   # memory-bounded regardless of output size.
   def render_file
@@ -69,7 +63,6 @@ class RendersController < ApplicationController
     {
       project:  "getting-started",
       template: "welcome",
-      version:  "1.0.0",
       data:     { name: params.fetch(:name, "Rails User") }
     }
   end

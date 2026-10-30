@@ -9,7 +9,6 @@ namespace :demo do
       "tmp/welcome.pdf",
       project:  "getting-started",
       template: "welcome",
-      version:  "1.0.0",
       data:     { name: "rake demo:render_to_file" }
     )
     puts "Wrote tmp/welcome.pdf (#{File.size('tmp/welcome.pdf')} bytes)"

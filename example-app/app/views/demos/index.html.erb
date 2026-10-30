@@ -384,7 +384,7 @@
       <span class="dot"></span>
       <span><%= @base_url %></span>
       <span class="sep">·</span>
-      <span>poli-page/rails v0.1.0 · key <%= @api_key_prefix %>•••</span>
+      <span>poli-page/rails v0.1.0</span>
     </div>
   </header>
 
@@ -392,15 +392,13 @@
     <div class="head">
       <h2>Render <span class="label">01 · instant</span></h2>
       <p class="desc">
-        Three SDK entry points for rendering the <code>getting-started/welcome</code> template:
-        binary PDF (<code>render.pdf</code>), streamed PDF (<code>render.pdf_stream</code>),
-        and HTML preview (<code>render.preview</code>).
+        Two SDK entry points for rendering the <code>getting-started/welcome</code> template:
+        binary PDF (<code>render.pdf</code>) and streamed PDF (<code>render.pdf_stream</code>).
       </p>
     </div>
     <div class="actions">
       <button class="run" data-action="pdf"     data-target="r1">Render PDF</button>
       <button class="run" data-action="stream"  data-target="r1">Via stream</button>
-      <button class="run" data-action="preview" data-target="r1">HTML preview</button>
     </div>
     <div class="result" id="r1">
       <div class="pane-label"><span>output</span><span class="meta">idle</span></div>
@@ -454,13 +452,13 @@
     <div class="head">
       <h2>Error handling <span class="label">04 · typed exceptions</span></h2>
       <p class="desc">
-        Sends a deliberately malformed version string to trigger
-        <code>INVALID_VERSION_FORMAT</code>. The gem's typed exceptions propagate the
-        API code, message, and request-id straight through.
+        Renders the template <code>does-not-exist</code> to trigger a <code>404</code>
+        <code>TEMPLATE_NOT_FOUND</code>. The gem's typed exceptions propagate the
+        API code, status, message, and request-id straight through.
       </p>
     </div>
     <div class="actions">
-      <button class="run" data-action="bad-version" data-target="r4">Trigger 400</button>
+      <button class="run" data-action="not-found" data-target="r4">Trigger 404</button>
     </div>
     <div class="result" id="r4">
       <div class="pane-label"><span>output</span><span class="meta">idle</span></div>
@@ -550,25 +548,19 @@
 
   const actions = {
     pdf: async target => {
-      const r = await fetch('/api/render/pdf');
+      const r = await fetch('/render/pdf');
       if (!r.ok) return renderError(target, `HTTP ${r.status}`);
       const blob = await r.blob();
       renderIframe(target, URL.createObjectURL(blob), 'pdf', `${blob.size.toLocaleString()} bytes`);
     },
     stream: async target => {
-      const r = await fetch('/api/render/stream');
+      const r = await fetch('/render/stream');
       if (!r.ok) return renderError(target, `HTTP ${r.status}`);
       const blob = await r.blob();
       renderIframe(target, URL.createObjectURL(blob), 'pdf (stream)', `${blob.size.toLocaleString()} bytes`);
     },
-    preview: async target => {
-      const r = await fetch('/api/render/preview');
-      const html = await r.text();
-      if (!r.ok) return renderError(target, `HTTP ${r.status}`);
-      renderInlineHtml(target, html, 'html preview', `${html.length.toLocaleString()} chars`);
-    },
     'doc-create': async target => {
-      const r = await fetch('/api/documents', {
+      const r = await fetch('/documents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -584,42 +576,42 @@
     },
     'doc-get': async target => {
       if (!state.docId) return;
-      // Why: /api/documents/:id returns a 302 to a presigned S3 URL. fetch()
+      // Why: /documents/:id returns a 302 to a presigned S3 URL. fetch()
       // with redirect:'follow' to a cross-origin response produces an opaque
       // response (S3 sends no Access-Control-Allow-Origin), so the browser
       // refuses to expose the body — "Failed to fetch". <iframe> navigation
       // isn't a fetch, so it follows the redirect natively. Trade-off: we
       // lose the byte-count display in the result label.
-      renderIframe(target, `/api/documents/${state.docId}`, 'stored pdf',
+      renderIframe(target, `/documents/${state.docId}`, 'stored pdf',
                    'served via 302 → presigned S3 URL');
     },
     'doc-preview': async target => {
       if (!state.docId) return;
-      const r = await fetch(`/api/documents/${state.docId}/preview`);
+      const r = await fetch(`/documents/${state.docId}/preview`);
       const html = await r.text();
       if (!r.ok) return renderError(target, `HTTP ${r.status}`);
       renderInlineHtml(target, html, 'stored html preview', `${html.length.toLocaleString()} chars`);
     },
     'doc-thumbnails': async target => {
       if (!state.docId) return;
-      const r = await fetch(`/api/documents/${state.docId}/thumbnails`);
+      const r = await fetch(`/documents/${state.docId}/thumbnails`);
       const body = await r.text();
       renderJson(target, r.status, body, 'thumbnails');
     },
     'doc-delete': async target => {
       if (!state.docId) return;
-      const r = await fetch(`/api/documents/${state.docId}`, { method: 'DELETE' });
+      const r = await fetch(`/documents/${state.docId}`, { method: 'DELETE' });
       const body = await r.text();
       renderJson(target, r.status, body || '"(204 No Content)"', 'delete');
       if (r.ok) setDocId(null);
     },
     'render-file': async target => {
-      const r = await fetch('/api/render/file', { method: 'POST' });
+      const r = await fetch('/render/file', { method: 'POST' });
       const body = await r.text();
       renderJson(target, r.status, body, 'wrote to disk');
     },
-    'bad-version': async target => {
-      const r = await fetch('/api/errors/bad-version');
+    'not-found': async target => {
+      const r = await fetch('/errors/not-found');
       const body = await r.text();
       renderJson(target, r.status, body, 'error payload');
     },

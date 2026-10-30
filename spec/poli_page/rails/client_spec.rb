@@ -20,14 +20,14 @@ RSpec.describe PoliPage, ".client (lazy memoised accessor)" do
   end
 
   it "returns a PoliPage::Client when api_key is valid" do
-    with_config(api_key: "pp_test_unit") do
+    with_config(api_key: PoliPage::Rails::Test::SANDBOX_KEY) do
       client = described_class.client
       expect(client).to be_a(PoliPage::Client)
     end
   end
 
   it "memoises the client across calls" do
-    with_config(api_key: "pp_test_unit") do
+    with_config(api_key: PoliPage::Rails::Test::SANDBOX_KEY) do
       a = described_class.client
       b = described_class.client
       expect(a).to be(b)
@@ -40,6 +40,14 @@ RSpec.describe PoliPage, ".client (lazy memoised accessor)" do
     end
   end
 
+  it "builds the client and logs one warning through config.logger for a malformed key" do
+    logger = instance_spy(Logger)
+    with_config(api_key: "pp_sandbox_x", logger: logger) do
+      expect(described_class.client).to be_a(PoliPage::Client)
+      expect(logger).to have_received(:warn).with(PoliPage::Rails::Test::MALFORMED_KEY_WARNING).once
+    end
+  end
+
   it "does not raise at engine boot when api_key is missing (lazy validation)" do
     # If validation ran at boot, the rails_helper require would have already raised.
     # Reaching this assertion proves boot was lazy.
@@ -49,7 +57,7 @@ RSpec.describe PoliPage, ".client (lazy memoised accessor)" do
   end
 
   it "memoises the SAME instance across threads (SDK is thread-safe)" do
-    with_config(api_key: "pp_test_unit") do
+    with_config(api_key: PoliPage::Rails::Test::SANDBOX_KEY) do
       seen = []
       mutex = Mutex.new
       threads = Array.new(8) do
@@ -65,7 +73,7 @@ RSpec.describe PoliPage, ".client (lazy memoised accessor)" do
 
   describe "PoliPage.reset_client!" do
     it "clears the memoised instance" do
-      with_config(api_key: "pp_test_unit") do
+      with_config(api_key: PoliPage::Rails::Test::SANDBOX_KEY) do
         a = described_class.client
         described_class.reset_client!
         b = described_class.client

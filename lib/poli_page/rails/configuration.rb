@@ -7,7 +7,7 @@ module PoliPage
                     :max_retries, :retry_delay,
                     :logger, :on_retry, :on_error,
                     :proxy, :ca_file, :ca_path,
-                    :notifications
+                    :notifications, :error_handler
 
       def initialize
         @api_key       = nil
@@ -23,12 +23,13 @@ module PoliPage
         @ca_file       = nil
         @ca_path       = nil
         @notifications = true
+        @error_handler = true
       end
 
       # Single source of truth for SDK kwargs. Compact drops every nil entry,
       # so the SDK's own defaults take over for every unset key. user_agent
-      # is intentionally NOT included — the SDK's Client#initialize does not
-      # accept it as of poli-page 1.0.0.rc.1 (sdk-ruby/lib/poli_page/client.rb).
+      # is intentionally NOT included — PoliPage::Client#initialize does not
+      # accept it (poli-page 0.11).
       def to_client_kwargs
         {
           api_key:     api_key,

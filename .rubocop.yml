@@ -16,8 +16,8 @@ AllCops:
     - "spec/internal/**/*"
 
 # Double-quoted strings are the dominant convention in modern Ruby SDKs
-# (anthropic-sdk-ruby, stripe-ruby, openai-ruby) and match the sibling
-# poli-page SDK at ../sdk-ruby/.
+# (anthropic-sdk-ruby, stripe-ruby, openai-ruby) and match the poli-page
+# Ruby SDK.
 Style/StringLiterals:
   EnforcedStyle: double_quotes
 
@@ -85,10 +85,12 @@ RSpec/SpecFilePathFormat:
   Enabled: false
 
 # Integration specs describe end-to-end behaviour against the deployed API,
-# not a specific class. Mirrors the SDK convention.
+# and the contract spec the example app's answers, not a specific class.
+# Mirrors the SDK convention.
 RSpec/DescribeClass:
   Exclude:
     - "spec/integration/**/*"
+    - "spec/contract/**/*"
 
 # Configuration#initialize and #to_client_kwargs are explicit lists of every
 # SDK kwarg — splitting them would obscure the 1:1 mapping with the SDK
