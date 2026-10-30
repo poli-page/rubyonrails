@@ -13,7 +13,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   answers every unrescued `PoliPage::Error` with the SDK's `to_payload` as JSON
   `{ "code", "message", "status", "requestId" }` and the payload's status
   (`503` for `network_error`, `504` for `timeout`), or `500` with
-  `"status": null` when the status is unknown. Set
+  `"status": null` when the status is unknown, always as `application/json`. Set
   `config.poli_page.error_handler = false` to leave it out.
 - The API contract's integration cases (`spec/contract`), run in CI against
   the example app on every Ruby and Rails version of the matrix, with the

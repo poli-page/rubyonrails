@@ -28,8 +28,8 @@ module PoliPage
 
       # Single source of truth for SDK kwargs. Compact drops every nil entry,
       # so the SDK's own defaults take over for every unset key. user_agent
-      # is intentionally NOT included — the SDK's Client#initialize does not
-      # accept it as of poli-page 1.0.0.rc.1 (sdk-ruby/lib/poli_page/client.rb).
+      # is intentionally NOT included — PoliPage::Client#initialize does not
+      # accept it (poli-page 0.11).
       def to_client_kwargs
         {
           api_key:     api_key,

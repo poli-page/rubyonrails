@@ -16,8 +16,8 @@ AllCops:
     - "spec/internal/**/*"
 
 # Double-quoted strings are the dominant convention in modern Ruby SDKs
-# (anthropic-sdk-ruby, stripe-ruby, openai-ruby) and match the sibling
-# poli-page SDK at ../sdk-ruby/.
+# (anthropic-sdk-ruby, stripe-ruby, openai-ruby) and match the poli-page
+# Ruby SDK.
 Style/StringLiterals:
   EnforcedStyle: double_quotes
 

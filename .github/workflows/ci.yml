@@ -69,7 +69,7 @@ jobs:
       - name: API contract
         id: contract
         uses: poli-page/api-contract@0eba96c1ecf9a28b7e259f444f3ca5b7c059d5fd # v1.3.0
-      - name: Integration spec against develop API
+      - name: Integration spec against the Poli Page API
         env:
           POLI_PAGE_API_KEY: ${{ secrets.POLI_PAGE_DEVELOP_API_KEY }}
           POLI_CONTRACT: ${{ steps.contract.outputs.path }}

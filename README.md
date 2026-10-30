@@ -166,7 +166,8 @@ The gem answers every `PoliPage::Error` a controller action raises without rescu
 
 - The HTTP status is the payload's `status`: the API's status for an API error, `503` for `network_error`, `504` for `timeout`. When the status is unknown (for example `configuration_error`), the answer is `500` and the body's `status` is `null`.
 - `requestId` is the API's `x-request-id`, or `null` when there is none.
-- The `Content-Type` is `application/json`.
+- The `Content-Type` is `application/json`, even when the action had set another one (a PDF route, say) before the error.
+- The keys are fixed: your app's inflections (an `ID` acronym, for example) do not change them.
 
 A `rescue_from` in your own controllers (for `PoliPage::Error`, one of its subclasses, or `StandardError`) takes precedence, as usual in Rails. To leave the handler out entirely:
 
