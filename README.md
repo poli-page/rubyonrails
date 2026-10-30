@@ -229,7 +229,7 @@ bundle exec rubocop
 bundle exec appraisal rails-8.0 rspec --exclude-pattern "spec/integration/**/*"
 ```
 
-`spec/integration` renders against a real API and runs only with `POLI_PAGE_API_KEY` set to a `pp_sandbox_` key.
+`spec/integration` renders against a real API and runs only with `POLI_PAGE_API_KEY` set to a `pp_sandbox_` key. It targets the SDK's default API, or the one in `POLI_PAGE_BASE_URL` when that is set. The live API CI job reads both from repository secrets: `POLI_PAGE_API_KEY` (a `pp_sandbox_` key) and the optional `POLI_PAGE_BASE_URL`.
 
 ### Contract tests
 
