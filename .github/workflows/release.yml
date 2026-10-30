@@ -1,0 +1,144 @@
+name: release
+
+# Tag-triggered publish. Push a `vX.Y.Z` tag whose version matches
+# lib/poli_page/rails/version.rb and this workflow publishes that version of
+# the `poli_page-rails` gem to RubyGems via Trusted Publishing (OIDC): no API
+# key stored in CI.
+#
+#   git tag v0.11.0 && git push origin v0.11.0
+#
+# The RubyGems Trusted Publisher record (rubygems.org) must name this file
+# (`release.yml`) and the repo `poli-page/rubyonrails`, with the Environment
+# field set to `rubygems-release` to match the publish job below. See
+# RELEASING.md for the one-time setup.
+#
+# The publish job is gated by the `rubygems-release` GitHub Environment: the
+# verify and gates jobs run automatically, then the RubyGems push waits for a
+# required reviewer to approve the run. Configure the gate at
+# Settings -> Environments -> rubygems-release -> Required reviewers.
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4.4"
+
+      - name: Verify tag matches lib/poli_page/rails/version.rb
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          GEM_VERSION="$(ruby -Ilib -rpoli_page/rails/version -e 'print PoliPage::Rails::VERSION')"
+          if [[ "$TAG_VERSION" != "$GEM_VERSION" ]]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} (${TAG_VERSION}) does not match PoliPage::Rails::VERSION (${GEM_VERSION}). Refusing to publish." >&2
+            exit 1
+          fi
+          echo "Releasing poli_page-rails ${GEM_VERSION}"
+
+      - name: Verify CHANGELOG has a section for this version
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          if ! awk -v h="## [${VERSION}]" 'index($0, h) == 1 { found = 1 } END { exit !found }' CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no '## [${VERSION}]' section. Refusing to publish." >&2
+            exit 1
+          fi
+
+  # The same suite as CI: lint, then every spec except the live API one
+  # (spec/integration), including the API contract's cases against the example
+  # app, on every supported Ruby and Rails version.
+  gates:
+    needs: verify
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        ruby: ["3.2", "3.3", "3.4"]
+        rails: ["7.0", "7.1", "7.2", "8.0"]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Pin Rails via Appraisal
+        run: |
+          set -euo pipefail
+          bundle exec appraisal generate
+          BUNDLE_GEMFILE="gemfiles/rails_${{ matrix.rails }}.gemfile" bundle install --jobs 4 --retry 3
+
+      - name: Lint
+        run: bundle exec rubocop
+
+      - name: API contract
+        id: contract
+        uses: poli-page/api-contract@0eba96c1ecf9a28b7e259f444f3ca5b7c059d5fd # v1.3.0
+
+      - name: Specs
+        env:
+          POLI_CONTRACT: ${{ steps.contract.outputs.path }}
+        run: bundle exec appraisal "rails-${{ matrix.rails }}" rspec --exclude-pattern "spec/integration/**/*"
+
+  publish:
+    needs: gates
+    runs-on: ubuntu-latest
+    environment: rubygems-release   # manual-approval gate (Required reviewers)
+    permissions:
+      contents: write   # create the GitHub Release (the git tag already exists)
+      id-token: write   # RubyGems Trusted Publishing (OIDC)
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4.4"
+          bundler-cache: true
+
+      - name: Publish to RubyGems (Trusted Publishing)
+        # Runs `bundle exec rake release`: builds the gem from the gemspec
+        # (lib/, sig/, LICENSE, README.md, CHANGELOG.md; not the example app
+        # or the specs), skips re-tagging (the tag already exists), pushes via
+        # OIDC, and uploads sigstore attestations. No GEM_HOST_API_KEY needed.
+        uses: rubygems/release-gem@v1
+
+      - name: Extract CHANGELOG section
+        id: changelog
+        run: |
+          set -euo pipefail
+          NOTES_FILE="$RUNNER_TEMP/release-notes.md"
+          awk -v ver="${GITHUB_REF_NAME#v}" '
+            index($0, "## [" ver "]") == 1 { capture = 1; next }
+            capture && /^## \[/              { exit }
+            capture && /^\[[^]]+\]: /       { exit }
+            capture                          { print }
+          ' CHANGELOG.md > "$NOTES_FILE"
+          if [ ! -s "$NOTES_FILE" ]; then
+            echo "_See [CHANGELOG.md](CHANGELOG.md) for details._" > "$NOTES_FILE"
+          fi
+          echo "notes_file=$NOTES_FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NOTES_FILE: ${{ steps.changelog.outputs.notes_file }}
+        run: |
+          set -euo pipefail
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file "$NOTES_FILE" \
+            pkg/*.gem

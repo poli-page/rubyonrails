@@ -29,7 +29,7 @@ Add the gem to your `Gemfile`:
 
 ```ruby
 # Gemfile
-gem "poli_page-rails"
+gem "poli_page-rails", "~> 0.11"
 ```
 
 Then run:
@@ -213,7 +213,7 @@ bin/rails server
 
 | Gem | Rails | Ruby |
 |---|---|---|
-| 0.1.x | 7.0 / 7.1 / 7.2 / 8.0 | 3.2 – 3.4 |
+| 0.11.x | 7.0 / 7.1 / 7.2 / 8.0 | 3.2 – 3.4 |
 
 You receive fixes for the latest two Rails majors. Older majors receive security fixes for six months after their upstream EOL.
 
@@ -240,6 +240,10 @@ POLI_CONTRACT=<path to contract.json> bundle exec rspec spec/contract
 ```
 
 Without `POLI_CONTRACT` the cases are pending (and fail when `CI` is set). Cases allowed to fail are listed with a reason in `spec/contract-skip.json`.
+
+### Releasing
+
+Releases are published by pushing a `vX.Y.Z` tag; see [RELEASING.md](RELEASING.md).
 
 ## License
 

@@ -19,9 +19,9 @@ Gem::Specification.new do |spec|
 
   spec.metadata = {
     "homepage_uri"          => "https://poli.page",
-    "source_code_uri"       => "https://github.com/poli-page/rails",
-    "changelog_uri"         => "https://github.com/poli-page/rails/blob/main/CHANGELOG.md",
-    "bug_tracker_uri"       => "https://github.com/poli-page/rails/issues",
+    "source_code_uri"       => "https://github.com/poli-page/rubyonrails",
+    "changelog_uri"         => "https://github.com/poli-page/rubyonrails/blob/main/CHANGELOG.md",
+    "bug_tracker_uri"       => "https://github.com/poli-page/rubyonrails/issues",
     "rubygems_mfa_required" => "true"
   }
 
