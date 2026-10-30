@@ -81,10 +81,56 @@ RSpec.describe PoliPage::Rails::ErrorHandler, type: :request do
       expect(json_body["code"]).to eq("network_error")
     end
 
-    it "builds the body from the SDK's to_payload, keys in camelCase" do
-      error = PoliPage::ConnectionError.new
-      expect(described_class.body(error)).to eq(error.to_payload.transform_keys { |k| k.to_s.camelize(:lower) })
+    it "builds the body from the SDK's to_payload, renaming request_id to requestId" do
+      error = PoliPage::NotFoundError.new("m", code: "C", status: 404, request_id: "req_1")
+      payload = error.to_payload
+      expect(described_class.body(error)).to eq(
+        "code" => payload[:code], "message" => payload[:message], "status" => payload[:status],
+        "requestId" => payload[:request_id]
+      )
       expect(described_class.body(error).keys).to eq(%w[code message status requestId])
+    end
+
+    it "answers application/json when the action set a PDF Content-Type first" do
+      get "/error_handler_test/pdf_first"
+
+      expect(response).to have_http_status(503)
+      expect(response.media_type).to eq("application/json")
+      expect(json_body["code"]).to eq("network_error")
+    end
+
+    it "answers application/json from an ActionController::Live action that set a PDF Content-Type first" do
+      get "/error_handler_live_test"
+
+      expect(response).to have_http_status(503)
+      expect(response.media_type).to eq("application/json")
+      expect(json_body).to eq(
+        "code" => "network_error", "message" => "Network request failed", "status" => 503, "requestId" => nil
+      )
+    end
+  end
+
+  describe "with the host app's inflections" do
+    # Inflections are global, so the acronym is set in a child process.
+    it "keeps requestId when the app declares an ID acronym" do
+      script = <<~RUBY
+        require "active_support"
+        require "active_support/inflector"
+        require "poli_page"
+        require "poli_page/rails/error_handler"
+        ActiveSupport::Inflector.inflections(:en) { |inflect| inflect.acronym "ID" }
+        raise "the acronym is not active" unless "request_id".camelize(:lower) == "requestID"
+
+        File.write(ARGV.fetch(0), JSON.generate(PoliPage::Rails::ErrorHandler.body(PoliPage::ConnectionError.new)))
+      RUBY
+      Dir.mktmpdir do |dir|
+        out = File.join(dir, "body.json")
+        lib = File.expand_path("../../../lib", __dir__)
+        output, status = Open3.capture2e(RbConfig.ruby, "-I", lib, "-e", script, out)
+        raise "the child process failed:\n#{output}" unless status.success?
+
+        expect(JSON.parse(File.read(out)).keys).to eq(%w[code message status requestId])
+      end
     end
   end
 

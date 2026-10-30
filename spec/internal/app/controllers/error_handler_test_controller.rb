@@ -19,4 +19,10 @@ class ErrorHandlerTestController < ActionController::Base
   def show
     raise ERRORS.fetch(params[:kind]).call
   end
+
+  # Sets a PDF Content-Type first, as a PDF route does before its SDK call.
+  def pdf_first
+    response.headers["Content-Type"] = "application/pdf"
+    raise PoliPage::ConnectionError
+  end
 end

@@ -3,6 +3,8 @@ module PoliPage
     module ErrorHandler
       extend ActiveSupport::Concern
 
+      WIRE_KEYS: Hash[Symbol, String]
+
       def self.body: (PoliPage::Error error) -> Hash[String, untyped]
       def self.status: (PoliPage::Error error) -> Integer
 
