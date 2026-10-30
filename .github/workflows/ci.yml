@@ -16,7 +16,7 @@ jobs:
         ruby: ['3.2', '3.3', '3.4']
         rails: ['7.0', '7.1', '7.2', '8.0']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
@@ -48,7 +48,7 @@ jobs:
       run:
         working-directory: example-app
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
@@ -74,7 +74,7 @@ jobs:
               echo "present=false" >> "$GITHUB_OUTPUT"
               ;;
           esac
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: steps.key.outputs.present == 'true'
       - uses: ruby/setup-ruby@v1
         if: steps.key.outputs.present == 'true'
