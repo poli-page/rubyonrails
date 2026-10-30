@@ -9,7 +9,9 @@
 # The PDF headers are set when the first chunk arrives, after the SDK has
 # rendered the document and started the download. An error before that (a
 # 404 from the render, a network error) leaves the response uncommitted, so
-# the gem's default error handler answers it as JSON with its own status.
+# the gem's default error handler answers it as JSON with its own status. An
+# error after the first chunk cannot change the 200 already sent: the handler
+# raises it again, Live logs it, and the client gets a short PDF.
 class StreamsController < ApplicationController
   include ActionController::Live
 
@@ -27,9 +29,15 @@ class StreamsController < ApplicationController
       started = true
       response.stream.write(chunk)
     end
-    start_pdf_response unless started # an empty PDF
+    unless started # an empty PDF
+      start_pdf_response
+      started = true
+    end
   ensure
-    response.stream.close
+    # Only a started stream is closed here: closing commits the response, and
+    # an error before the first chunk must reach the error handler (or Rails'
+    # usual 500) uncommitted.
+    response.stream.close if started
   end
 
   private
