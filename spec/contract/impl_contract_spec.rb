@@ -7,7 +7,8 @@
 # sets POLI_CONTRACT to its path. The app under test is this suite's Rails app
 # with the example app's controllers, routes and PoliPage initializer loaded
 # into it (spec/support/contract/impl_case_runner.rb), so the cases run on
-# every Rails version of the CI matrix. Per case, a local server
+# every Rails version of the CI matrix. A case also fails when the example
+# initializer turns the default error handler off. Per case, a local server
 # (spec/support/contract/mock_server.rb) answers the case's `responses` in
 # order and records the SDK's requests; the example initializer points the
 # SDK at it through POLI_PAGE_BASE_URL; the case's request goes through the
