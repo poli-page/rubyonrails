@@ -7,3 +7,8 @@ Rails.application.routes.draw do
   get "error_handler_test/:kind",       to: "error_handler_test#show"
   get "error_handler_api_test",         to: "error_handler_api_test#show"
 end
+
+# The example app's own routes, for spec/contract/impl_contract_spec.rb. The
+# routes reloader keeps the route set open while it loads this file, so this
+# second draw adds to the one above instead of replacing it.
+load File.expand_path("../../../example-app/config/routes.rb", __dir__)
