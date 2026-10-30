@@ -16,71 +16,61 @@ jobs:
         rails: ['7.0', '7.1', '7.2', '8.0']
     steps:
       - uses: actions/checkout@v4
-        with: { path: rails }
-      - uses: actions/checkout@v4
-        with:
-          repository: poli-page/sdk-ruby
-          path: sdk-ruby
-          ref: main
-        continue-on-error: true
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
-          working-directory: rails
       - name: Pin Rails via Appraisal
-        working-directory: rails
+        # `appraisal NAME install` is invalid: NAME is consumed as the
+        # appraisal scope and `install` is run as an external command (the
+        # /usr/bin/install binary), which fails. Generate the per-Rails
+        # gemfiles, then bundle install only the one this job needs.
         run: |
-          if [ -f Appraisals ]; then
-            # `appraisal NAME install` is invalid: NAME is consumed as the
-            # appraisal scope and `install` is run as an external command (the
-            # /usr/bin/install binary), which fails. Generate the per-Rails
-            # gemfiles, then bundle install only the one this job needs.
-            bundle exec appraisal generate
-            BUNDLE_GEMFILE="gemfiles/rails_${{ matrix.rails }}.gemfile" bundle install --jobs 4 --retry 3
-          else
-            echo "Skipping appraisal: no Appraisals yet"
-          fi
+          bundle exec appraisal generate
+          BUNDLE_GEMFILE="gemfiles/rails_${{ matrix.rails }}.gemfile" bundle install --jobs 4 --retry 3
       - name: Lint
-        working-directory: rails
-        run: |
-          if [ -f .rubocop.yml ]; then
-            bundle exec rubocop
-          else
-            echo "Skipping lint: no .rubocop.yml yet"
-          fi
+        run: bundle exec rubocop
+      - name: API contract
+        id: contract
+        uses: poli-page/api-contract@0eba96c1ecf9a28b7e259f444f3ca5b7c059d5fd # v1.3.0
       - name: Specs
-        working-directory: rails
-        run: |
-          if [ -d spec ] && compgen -G "spec/**/*_spec.rb" > /dev/null; then
-            bundle exec appraisal "rails-${{ matrix.rails }}" rspec --exclude-pattern "spec/integration/**/*"
-          else
-            echo "Skipping specs: no *_spec.rb yet"
-          fi
+        # Includes spec/contract (the API contract's integration cases against
+        # the example app); spec/integration needs the real API and runs in
+        # the integration job.
+        env:
+          POLI_CONTRACT: ${{ steps.contract.outputs.path }}
+        run: bundle exec appraisal "rails-${{ matrix.rails }}" rspec --exclude-pattern "spec/integration/**/*"
+
+  example-app:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: example-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+          working-directory: example-app
+      - name: Boot and eager-load the example app
+        env:
+          POLI_PAGE_API_KEY: pp_sandbox_0123456789abcdef0123456789abcdef
+        run: bin/rails zeitwerk:check
 
   integration:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-        with: { path: rails }
-      - uses: actions/checkout@v4
-        with:
-          repository: poli-page/sdk-ruby
-          path: sdk-ruby
-          ref: main
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.3'
           bundler-cache: true
-          working-directory: rails
+      - name: API contract
+        id: contract
+        uses: poli-page/api-contract@0eba96c1ecf9a28b7e259f444f3ca5b7c059d5fd # v1.3.0
       - name: Integration spec against develop API
-        working-directory: rails
         env:
           POLI_PAGE_API_KEY: ${{ secrets.POLI_PAGE_DEVELOP_API_KEY }}
-        run: |
-          if [ -d spec/integration ] && compgen -G "spec/integration/*_spec.rb" > /dev/null; then
-            bundle exec rspec spec/integration
-          else
-            echo "Skipping integration spec: no spec/integration yet"
-          fi
+          POLI_CONTRACT: ${{ steps.contract.outputs.path }}
+        run: bundle exec rspec spec/integration
