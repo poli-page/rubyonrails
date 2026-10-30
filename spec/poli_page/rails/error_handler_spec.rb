@@ -11,9 +11,10 @@ RSpec.describe PoliPage::Rails::ErrorHandler, type: :request do
   end
 
   # Rails serves ActionController::Live as a plain response to HTTP/1.0, the
-  # test client's default protocol; HTTP/1.1 gets the real Live stream.
+  # test client's default protocol (Rails 7.0 reads HTTP_VERSION, later
+  # versions SERVER_PROTOCOL); HTTP/1.1 gets the real Live stream.
   def get_live(path, accept: "application/pdf")
-    get path, env: { "SERVER_PROTOCOL" => "HTTP/1.1" }, headers: { "Accept" => accept }
+    get path, env: { "SERVER_PROTOCOL" => "HTTP/1.1", "HTTP_VERSION" => "HTTP/1.1" }, headers: { "Accept" => accept }
   end
 
   describe "on by default" do
