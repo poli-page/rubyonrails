@@ -25,6 +25,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- CI: the live API job runs on `main` (and on demand) against the production API with the sandbox key from the `POLI_PAGE_API_KEY` secret, and skips with a notice when the key is absent or not a `pp_sandbox_` key.
+
 - **Breaking:** requires the `poli-page` SDK 0.11.0 (`~> 0.11`), the first
   release with environment keys and without template versions. Render calls
   take no `version:`: a key belongs to one environment
