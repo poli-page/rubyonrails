@@ -44,6 +44,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   error's code, message, status and request id. `GET /documents/:id/preview`
   now goes through `render_preview`. `GET /documents/:id` still answers a
   `302` to the presigned PDF URL.
+- Example app: `GET /render/stream` sets its PDF headers when the first chunk
+  arrives, after the render and the start of the download, so a render error
+  or a network error before that answers through the default error handler
+  (JSON, its own status) instead of a `200 application/pdf`.
 - The integration spec runs only with a `pp_sandbox_` key.
 
 ### Removed
