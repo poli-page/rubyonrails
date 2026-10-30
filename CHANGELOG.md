@@ -6,15 +6,27 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- A default error handler, on by default: `PoliPage::Rails::ErrorHandler` is
+  included into `ActionController::Base` and `ActionController::API` and
+  answers every unrescued `PoliPage::Error` with the SDK's `to_payload` as JSON
+  `{ "code", "message", "status", "requestId" }` and the payload's status
+  (`503` for `network_error`, `504` for `timeout`), or `500` with
+  `"status": null` when the status is unknown. Set
+  `config.poli_page.error_handler = false` to leave it out.
+- The API contract's integration cases (`spec/contract`), run in CI against
+  the example app on every Ruby and Rails version of the matrix, with the
+  contract pinned to v1.3.0 by the `poli-page/api-contract` action.
+
 ### Changed
 
-- **Breaking:** requires the `poli-page` SDK release without template
-  versions (after 0.9.1). Render calls take no `version:`: a key belongs to
-  one environment (`pp_{environment}_{32 lowercase hex}`, for example
-  `pp_sandbox_…`, `pp_live_…`, `pp_staging_…`), and the key alone selects the
-  environment and so the published copy that renders. Until that release is
-  on RubyGems, the `Gemfile` and `example-app/Gemfile` pin `sdk-ruby` main by
-  git ref instead of a sibling `path:` checkout.
+- **Breaking:** requires the `poli-page` SDK 0.11.0 (`~> 0.11`), the first
+  release with environment keys and without template versions. Render calls
+  take no `version:`: a key belongs to one environment
+  (`pp_{environment}_{32 lowercase hex}`, for example `pp_sandbox_…`,
+  `pp_live_…`, `pp_staging_…`), and the key alone selects the environment and
+  so the published copy that renders.
 - `ConfigurationValidator` accepts any environment key. It raises
   `ConfigurationError` only for a missing or empty `api_key`; a value that does
   not match `pp_{environment}_{32 lowercase hex}` logs one warning through
@@ -24,17 +36,22 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `API_KEY_PATTERN` is replaced by `API_KEY_FORMAT`.
 - `render_preview` now documents `DocumentPreviewResult` (`documents.preview`)
   only.
-- Example app: `GET /api/errors/bad-version` (`INVALID_VERSION_FORMAT`) is
-  replaced by `GET /api/errors/not-found`, which renders the template
-  `does-not-exist` and answers `404 TEMPLATE_NOT_FOUND` with the error's code,
-  status, message and request id. `GET /api/documents/:id/preview` now goes
-  through `render_preview`.
+- Example app: the demo routes move from `/api/*` to the demo-contract
+  paths (`GET /render/pdf`, `GET /documents/:id`, `GET /errors/not-found`, …).
+  `GET /api/errors/bad-version` (`INVALID_VERSION_FORMAT`) is replaced by
+  `GET /errors/not-found`, which renders the template `does-not-exist` and,
+  through the default error handler, answers `404 TEMPLATE_NOT_FOUND` with the
+  error's code, message, status and request id. `GET /documents/:id/preview`
+  now goes through `render_preview`. `GET /documents/:id` still answers a
+  `302` to the presigned PDF URL.
 - The integration spec runs only with a `pp_sandbox_` key.
 
 ### Removed
 
 - Example app: `GET /api/render/preview` (`render.preview`) and its "HTML
   preview" button; the SDK no longer has `render.preview`.
+- Example app: `DocumentsController`'s own `rescue_from PoliPage::Error`; the
+  default error handler answers instead.
 
 ### Fixed
 

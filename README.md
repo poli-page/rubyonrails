@@ -21,7 +21,7 @@ This gem wires the official [`poli-page`](https://rubygems.org/gems/poli-page) R
 
 - Ruby 3.2 or newer
 - Rails 7.0, 7.1, 7.2, or 8.0
-- `poli-page` SDK: the release without template versions (after 0.9.1; until it is on RubyGems, this repo's `Gemfile` pins `sdk-ruby` main)
+- `poli-page` SDK 0.11.0 or a later 0.x release (`~> 0.11`), the first release with environment keys and without template versions; Bundler installs it with the gem
 
 ## Install
 
@@ -97,6 +97,7 @@ Every key is optional except `api_key`. The SDK's own defaults apply when a valu
 | `notifications` | `true` | Set to `false` to disable the `ActiveSupport::Notifications` bridge. |
 | `on_retry` | bridge | Custom callable. Setting it replaces the notifications bridge. |
 | `on_error` | bridge | Custom callable. Setting it replaces the notifications bridge. |
+| `error_handler` | `true` | Set to `false` to leave out the default error handler (see [Default error handler](#default-error-handler)). |
 
 A minimal initializer:
 
@@ -117,7 +118,8 @@ Configuration is validated lazily on the first `PoliPage.client` call, so `asset
 | `PoliPage::Rails::Renderable` | Controller concern exposing `render_pdf`, `render_preview`, `redirect_to_document`. |
 | `PoliPage::Rails::Configuration` | The object behind `Rails.application.config.poli_page`. |
 | `PoliPage::Rails::Engine` | Rails engine subclass auto-loaded from your `Gemfile`. |
-| `PoliPage::Rails::Railtie` | Installs the configuration, the logger default, and the notifications bridge. |
+| `PoliPage::Rails::ErrorHandler` | Controller concern that answers a `PoliPage::Error` with JSON; included by default. |
+| `PoliPage::Rails::Railtie` | Installs the configuration, the logger default, the notifications bridge, and the error handler. |
 | `"poli_page.retry"` | `ActiveSupport::Notifications` event fired before each SDK retry. |
 | `"poli_page.error"` | `ActiveSupport::Notifications` event fired on terminal SDK failure. |
 | `rails generate poli_page:install` | Writes `config/initializers/poli_page.rb`. |
@@ -132,6 +134,8 @@ The SDK raises a fixed hierarchy under `PoliPage::Error`. The four categories yo
 - **Rate limit** — `PoliPage::RateLimitError`. The API returned `429`; honour `Retry-After`.
 - **Request rejected** — `PoliPage::ValidationError`. The template, project, or `data` payload was rejected at `400`.
 - **Network / transport** — `PoliPage::ConnectionError`, `PoliPage::TimeoutError`. Network failure, DNS, TLS, or timeout.
+
+A `PoliPage::Error` you do not rescue reaches the [default error handler](#default-error-handler).
 
 This gem adds one Rails-specific error: `PoliPage::Rails::ConfigurationError`, raised by `ConfigurationValidator` on the first `PoliPage.client` call when the initializer is invalid. It inherits from `PoliPage::Error`, so a single `rescue PoliPage::Error` catches everything.
 
@@ -152,9 +156,32 @@ rescue PoliPage::ConnectionError, PoliPage::TimeoutError
 end
 ```
 
+### Default error handler
+
+The gem answers every `PoliPage::Error` a controller action raises without rescuing it. The Railtie includes `PoliPage::Rails::ErrorHandler` into `ActionController::Base` and `ActionController::API`, which `rescue_from PoliPage::Error` and render the SDK's `Error#to_payload` as JSON, with its keys in camelCase:
+
+```json
+{ "code": "TEMPLATE_NOT_FOUND", "message": "Template 'does-not-exist' not found in project 'getting-started'.", "status": 404, "requestId": "req_…" }
+```
+
+- The HTTP status is the payload's `status`: the API's status for an API error, `503` for `network_error`, `504` for `timeout`. When the status is unknown (for example `configuration_error`), the answer is `500` and the body's `status` is `null`.
+- `requestId` is the API's `x-request-id`, or `null` when there is none.
+- The `Content-Type` is `application/json`.
+
+A `rescue_from` in your own controllers (for `PoliPage::Error`, one of its subclasses, or `StandardError`) takes precedence, as usual in Rails. To leave the handler out entirely:
+
+```ruby
+# config/initializers/poli_page.rb
+Rails.application.config.poli_page.tap do |c|
+  c.error_handler = false
+end
+```
+
+The value must be `true` or `false`; the app refuses to boot with anything else.
+
 ## Example app
 
-A runnable Rails 8 app lives in [`example-app/`](./example-app). It exercises every public SDK method behind a single-page UI and ships a `bin/rake demo:render_to_file` task for the `render_to_file` SDK path. It renders the `welcome` template of the `getting-started` project, which every organization has in its `sandbox` environment, and `GET /api/errors/not-found` renders the template `does-not-exist` to show the `404 TEMPLATE_NOT_FOUND` error's code, status, message, and request id.
+A runnable Rails 8 app lives in [`example-app/`](./example-app). It exercises every public SDK method behind a single-page UI and ships a `bin/rake demo:render_to_file` task for the `render_to_file` SDK path. It renders the `welcome` template of the `getting-started` project, which every organization has in its `sandbox` environment. Its routes follow the Poli Page demo contract: `GET /render/pdf` answers the PDF, `GET /documents/:id` redirects (`302`) to the document's presigned PDF URL, and `GET /errors/not-found` renders the template `does-not-exist`, so the default error handler answers `404` with the `TEMPLATE_NOT_FOUND` error's code, message, status and request id. If your organization renamed or removed `getting-started` from `sandbox`, the renders answer `404 PROJECT_NOT_FOUND` or `PROJECT_NOT_IN_ENVIRONMENT`: use a fresh organization.
 
 ```ruby
 # shell
@@ -171,7 +198,6 @@ bin/rails server
 - Filename encoding — how `PoliPage::Rails::FilenameEncoder` produces RFC 5987 `Content-Disposition` values for non-ASCII names (forthcoming `docs/filenames.md`).
 - Background rendering — running renders through Active Job for slow templates (forthcoming `docs/active_job.md`).
 - Testing helpers — stubbing `PoliPage.client` in request specs and system tests (forthcoming `docs/testing.md`).
-- Engine specification — the full design spec for v0.1.0 at [`docs/spec/rails-engine-specification.md`](docs/spec/rails-engine-specification.md).
 
 ## Compatibility
 
@@ -183,7 +209,27 @@ You receive fixes for the latest two Rails majors. Older majors receive security
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+Run the lint and the specs for one Rails version with Appraisal:
+
+```sh
+bundle install
+bundle exec appraisal generate
+BUNDLE_GEMFILE=gemfiles/rails_8.0.gemfile bundle install
+bundle exec rubocop
+bundle exec appraisal rails-8.0 rspec --exclude-pattern "spec/integration/**/*"
+```
+
+`spec/integration` renders against a real API and runs only with `POLI_PAGE_API_KEY` set to a `pp_sandbox_` key.
+
+### Contract tests
+
+`spec/contract/impl_contract_spec.rb` runs the integration cases of the [Poli Page API contract](https://github.com/poli-page/api-contract) against the example app's controllers, routes and initializer, with the SDK pointed at a local mock server. CI runs them on every Ruby and Rails version of the matrix, against the contract version pinned in `.github/workflows/ci.yml`. Locally, download a `contract.json` and run:
+
+```sh
+POLI_CONTRACT=<path to contract.json> bundle exec rspec spec/contract
+```
+
+Without `POLI_CONTRACT` the cases are pending (and fail when `CI` is set). Cases allowed to fail are listed with a reason in `spec/contract-skip.json`.
 
 ## License
 
