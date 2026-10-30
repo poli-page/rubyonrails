@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "json"
 require "active_support/concern"
 require "active_support/core_ext/string/inflections"
 
@@ -39,8 +40,11 @@ module PoliPage
 
       private
 
+      # Why JSON.generate: the body holds only strings, integers and nil, and
+      # it keeps the answer independent of ActiveSupport's JSON encoder (whose
+      # Rails 7.0, 7.1 and 8.0 releases pass an option the json 3 gem refuses).
       def render_poli_page_error(error)
-        render json: ErrorHandler.body(error), status: ErrorHandler.status(error)
+        render json: JSON.generate(ErrorHandler.body(error)), status: ErrorHandler.status(error)
       end
     end
   end
