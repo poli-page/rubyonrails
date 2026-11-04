@@ -21,6 +21,7 @@ Gem::Specification.new do |spec|
     "homepage_uri"          => "https://poli.page",
     "source_code_uri"       => "https://github.com/poli-page/rubyonrails",
     "changelog_uri"         => "https://github.com/poli-page/rubyonrails/blob/main/CHANGELOG.md",
+    "documentation_uri"     => "https://poli-page.github.io/rubyonrails/",
     "bug_tracker_uri"       => "https://github.com/poli-page/rubyonrails/issues",
     "rubygems_mfa_required" => "true"
   }

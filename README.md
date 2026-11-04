@@ -1,6 +1,21 @@
 # poli_page-rails
 
+[![Gem](https://img.shields.io/gem/v/poli_page-rails?style=flat&logo=ruby&logoColor=ffffff&label=Gem)](https://rubygems.org/gems/poli_page-rails)
+[![Downloads](https://img.shields.io/gem/dt/poli_page-rails?style=flat&logo=ruby&logoColor=ffffff&label=Downloads)](https://rubygems.org/gems/poli_page-rails)
+[![Ci](https://img.shields.io/github/actions/workflow/status/poli-page/rubyonrails/ci.yml?branch=main&style=flat&logo=githubactions&logoColor=ffffff&label=Ci)](https://github.com/poli-page/rubyonrails/actions/workflows/ci.yml)
+[![Codeql](https://img.shields.io/github/actions/workflow/status/poli-page/rubyonrails/codeql.yml?branch=main&style=flat&logo=github&logoColor=ffffff&label=Codeql)](https://github.com/poli-page/rubyonrails/actions/workflows/codeql.yml)
+[![Coverage](https://img.shields.io/codecov/c/github/poli-page/rubyonrails?style=flat&logo=codecov&logoColor=ffffff&label=Coverage)](https://codecov.io/gh/poli-page/rubyonrails)
+[![Ruby](https://img.shields.io/badge/Ruby-3.2%20%7C%203.3%20%7C%203.4-blue?style=flat&logo=ruby&logoColor=ffffff)](https://github.com/poli-page/rubyonrails/blob/main/.github/workflows/ci.yml)
+[![Rails](https://img.shields.io/badge/Rails-7.0%20%7C%207.1%20%7C%207.2%20%7C%208.0-blue?style=flat&logo=rubyonrails&logoColor=ffffff)](https://rubyonrails.org/)
+[![Types](https://img.shields.io/badge/Types-RBS-blue?style=flat&logo=ruby&logoColor=ffffff)](https://github.com/poli-page/rubyonrails/tree/main/sig)
+[![Style](https://img.shields.io/badge/Style-Rubocop-blue?style=flat&logo=ruby&logoColor=ffffff)](https://github.com/rubocop/rubocop)
+[![Deps](https://img.shields.io/badge/Deps-up%20to%20date-brightgreen?style=flat&logo=ruby&logoColor=ffffff)](https://github.com/poli-page/rubyonrails/network/dependencies)
+[![Docs](https://img.shields.io/badge/Docs-online-brightgreen?style=flat&logo=readthedocs&logoColor=ffffff)](https://poli-page.github.io/rubyonrails/)
+[![License](https://img.shields.io/github/license/poli-page/rubyonrails?style=flat&logo=gnu&logoColor=ffffff&label=License)](LICENSE)
+
 > Render Poli Page documents from Rails controllers.
+
+→ **Documentation**: https://poli-page.github.io/rubyonrails/
 
 ## About
 
@@ -124,7 +139,7 @@ Configuration is validated lazily on the first `PoliPage.client` call, so `asset
 | `"poli_page.error"` | `ActiveSupport::Notifications` event fired on terminal SDK failure. |
 | `rails generate poli_page:install` | Writes `config/initializers/poli_page.rb`. |
 
-Full reference: [docs/api.md](docs/api.md) (forthcoming).
+Full reference: [API reference](https://poli-page.github.io/rubyonrails/reference/api/).
 
 ## Errors
 
@@ -206,10 +221,10 @@ bin/rails server
 
 ## Going further
 
-- ActiveSupport::Notifications — subscribe to `poli_page.retry` and `poli_page.error` for logging, metrics, and alerting (forthcoming `docs/notifications.md`).
-- Filename encoding — how `PoliPage::Rails::FilenameEncoder` produces RFC 5987 `Content-Disposition` values for non-ASCII names (forthcoming `docs/filenames.md`).
-- Background rendering — running renders through Active Job for slow templates (forthcoming `docs/active_job.md`).
-- Testing helpers — stubbing `PoliPage.client` in request specs and system tests (forthcoming `docs/testing.md`).
+- ActiveSupport::Notifications — subscribe to `poli_page.retry` and `poli_page.error` for logging, metrics, and alerting ([Observability](https://poli-page.github.io/rubyonrails/production/observability/)).
+- Filename encoding — how `PoliPage::Rails::FilenameEncoder` produces RFC 5987 `Content-Disposition` values for non-ASCII names ([Responses](https://poli-page.github.io/rubyonrails/concepts/responses/)).
+- Background rendering — running renders through Active Job for slow templates ([Client access](https://poli-page.github.io/rubyonrails/concepts/client-access/) has a job example).
+- Testing helpers — stubbing `PoliPage.client` in request specs and system tests ([Testing](https://poli-page.github.io/rubyonrails/production/testing/)).
 
 ## Compatibility
 
