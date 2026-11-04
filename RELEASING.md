@@ -47,10 +47,12 @@ The gem name `poli_page-rails` is not taken on RubyGems
 found.`), so the first publish creates it. A gem that does not exist yet gets a **pending** trusted
 publisher.
 
-1. Sign in to rubygems.org with the account that will own the gem (the one that owns `poli-page`).
-   Multi-factor authentication must be on: the gemspec sets `rubygems_mfa_required`.
+1. Sign in to rubygems.org as the account that will own the gem: `poli-page`, ID `247441`, the
+   account the workflow asserts (step 4). Multi-factor authentication must be on: the gemspec sets
+   `rubygems_mfa_required`.
 2. Open <https://rubygems.org/profile/oidc/pending_trusted_publishers>, choose **Create**, and fill
-   in:
+   in the fields below. A pending trusted publisher expires 12 hours after it is created, so create
+   it less than 12 hours before you push the tag, and approve the `publish` job within that window.
    - Gem name: `poli_page-rails`
    - Repository owner: `poli-page`
    - Repository name: `rubyonrails`
@@ -61,7 +63,6 @@ publisher.
    - Required reviewers: add the maintainers who approve releases.
    - Deployment branches and tags: **Selected branches and tags**, add the tag rule `v*.*.*`.
    - No secrets or variables are needed.
-
 4. The publish job asserts the account that will own the gem: `RUBYGEMS_OWNER_ID` in the `env` of
    the `publish` job of `.github/workflows/release.yml`, set to `247441`, the ID of the RubyGems.org
    account `poli-page` (see `https://rubygems.org/api/v1/gems/poli-page/owners.json`). It is not a
@@ -75,9 +76,14 @@ publisher.
    handle, because a handle can be renamed and taken again. If another account owns the pending
    trusted publisher, set its ID here.
 
+If the pending trusted publisher has expired, or was created by an account other than
+`RUBYGEMS_OWNER_ID`, the push fails with the generic "You are not allowed to push this gem.",
+which names neither cause. Create the pending trusted publisher again from the `poli-page` account
+(step 2), then re-run the failed `publish` job: a re-run gets a fresh OIDC token.
+
 After the first publish, the pending publisher becomes a regular trusted publisher of the gem.
-From then on that trusted publisher authorizes each push and RubyGems.org does not use the
-asserted owner, so the workflow keeps sending it. Add co-owners with
+From then on that trusted publisher authorizes each push and RubyGems.org ignores the asserted
+owner, so sending it on every release does no harm. Add co-owners with
 `gem owner poli_page-rails --add <email>` if needed.
 
 ## Per release
@@ -109,3 +115,9 @@ lockfile, or its major.minor is not the pinned contract's or the required SDK's:
 (`git push origin :refs/tags/vX.Y.Z && git tag -d vX.Y.Z`), fix `main` through a PR, and tag
 again. A version that reached RubyGems cannot be published again; release a new patch
 version instead.
+
+If `publish` fails before the push reached RubyGems, re-run the failed job once the cause is
+fixed outside the repository (an expired pending trusted publisher, an unapproved deployment). If
+the fix is a change to the repository, such as the workflow itself, a re-run replays the tagged
+commit's workflow: delete the tag as above, merge the fix into `main`, and tag the new merge
+commit with the same version.
