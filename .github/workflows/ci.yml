@@ -7,12 +7,14 @@ on:
 
 permissions:
   contents: read
-  # Required by the Codecov uploader (use_oidc: true) so it can mint a
-  # short-lived OIDC token instead of relying on a CODECOV_TOKEN secret.
-  id-token: write
 
 jobs:
   test:
+    # Required by the Codecov uploader (use_oidc: true) so it can mint a
+    # short-lived OIDC token instead of relying on a CODECOV_TOKEN secret.
+    permissions:
+      contents: read
+      id-token: write
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
