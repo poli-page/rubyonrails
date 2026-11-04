@@ -5,6 +5,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  # Required by the Codecov uploader (use_oidc: true) so it can mint a
+  # short-lived OIDC token instead of relying on a CODECOV_TOKEN secret.
+  id-token: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -41,6 +47,17 @@ jobs:
         env:
           POLI_CONTRACT: ${{ steps.contract.outputs.path }}
         run: bundle exec appraisal "rails-${{ matrix.rails }}" rspec --exclude-pattern "spec/integration/**/*"
+
+      - name: Upload coverage to Codecov
+        # Only upload once per CI run: the matrix would otherwise upload the
+        # same report 12 times. Tokenless: Codecov uses the GitHub OIDC token
+        # for public-repo uploads, so no CODECOV_TOKEN secret is required.
+        if: matrix.ruby == '3.4' && matrix.rails == '8.0'
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          files: ./coverage/lcov.info
+          use_oidc: true
+          fail_ci_if_error: false
 
   example-app:
     runs-on: ubuntu-latest

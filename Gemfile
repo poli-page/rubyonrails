@@ -14,4 +14,9 @@ group :development, :test do
   gem "rubocop-rspec",       require: false
   gem "rubocop-performance", require: false
   gem "dotenv", "~> 3.1"
+  gem "simplecov", "~> 1.2", require: false
+  # Emits coverage/lcov.info for the Codecov uploader (CI step in
+  # `.github/workflows/ci.yml`). The HTML report under coverage/ is still
+  # produced for local inspection.
+  gem "simplecov-lcov", "~> 0.8", require: false
 end
