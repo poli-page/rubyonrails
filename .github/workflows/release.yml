@@ -3,7 +3,8 @@ name: release
 # Tag-triggered publish. Push a `vX.Y.Z` tag whose version matches
 # lib/poli_page/rails/version.rb and this workflow publishes that version of
 # the `poli_page-rails` gem to RubyGems via Trusted Publishing (OIDC): no API
-# key stored in CI.
+# key stored in CI. The publish job asserts the RubyGems.org account that owns
+# the gem (RUBYGEMS_OWNER_ID), which RubyGems.org requires to create a new gem.
 #
 #   git tag v0.13.0 && git push origin v0.13.0
 #
@@ -120,22 +121,45 @@ jobs:
     environment: rubygems-release   # manual-approval gate (Required reviewers)
     permissions:
       contents: write   # create the GitHub Release (the git tag already exists)
-      id-token: write   # RubyGems Trusted Publishing (OIDC)
+      id-token: write   # RubyGems Trusted Publishing (OIDC), and the sigstore attestation
+    env:
+      # The RubyGems.org account that owns the gem: `poli-page`, ID 247441
+      # (https://rubygems.org/api/v1/gems/poli-page/owners.json). Not a secret.
+      # RubyGems.org lets trusted publishing create a new gem only when the
+      # token exchange names the account whose pending trusted publisher
+      # allows it; once the gem exists its own trusted publisher authorizes
+      # pushes and the owner is unused. An ID, not a handle: handles can be
+      # renamed and taken again.
+      RUBYGEMS_OWNER_ID: "247441"
     steps:
-      - uses: actions/checkout@v7
+      # Pinned by SHA: this job holds id-token: write, contents: write and,
+      # after the next steps, the RubyGems key.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
         with:
           ruby-version: "3.4.4"
           bundler-cache: true
 
-      - name: Publish to RubyGems (Trusted Publishing)
+      # rubygems/release-gem sets up trusted publishing through
+      # rubygems/configure-rubygems-credentials, which cannot send the owner
+      # account yet. This step does the same exchange with the owner: GitHub
+      # OIDC token (audience rubygems.org) -> RubyGems.org API key, valid for
+      # 15 minutes, masked and exported as GEM_HOST_API_KEY and
+      # ~/.gem/credentials. Keep it right before the push.
+      - name: RubyGems API key (Trusted Publishing, owner asserted)
+        run: ./scripts/exchange-rubygems-oidc-token.sh
+
+      - name: Publish to RubyGems
         # Runs `bundle exec rake release`: builds the gem from the gemspec
         # (lib/, sig/, LICENSE, README.md, CHANGELOG.md; not the example app
-        # or the specs), skips re-tagging (the tag already exists), pushes via
-        # OIDC, and uploads sigstore attestations. No GEM_HOST_API_KEY needed.
-        uses: rubygems/release-gem@v1
+        # or the specs), skips re-tagging (the tag already exists), pushes
+        # with the key from the step above, and uploads sigstore attestations
+        # (signed with the job's own OIDC identity, not the RubyGems key).
+        uses: rubygems/release-gem@7f9650160c1a4e7989fdc9855807bdbd421d8b6b # v1.4.1
+        with:
+          setup-trusted-publisher: false
 
       - name: Extract CHANGELOG section
         id: changelog
