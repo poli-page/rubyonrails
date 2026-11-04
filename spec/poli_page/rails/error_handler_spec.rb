@@ -80,6 +80,27 @@ RSpec.describe PoliPage::Rails::ErrorHandler, type: :request do
       )
     end
 
+    it "answers invalid_response with 502, the to_payload status, not the 2xx the proxy sent" do
+      get "/error_handler_test/invalid_response"
+
+      expect(response).to have_http_status(502)
+      expect(response.media_type).to eq("application/json")
+      expect(json_body).to eq(
+        "code" => "invalid_response", "message" => "Invalid response: HTTP 200 body is not JSON",
+        "status" => 502, "requestId" => "req_proxy"
+      )
+    end
+
+    it "answers io_error with 500 and a null status in the body" do
+      get "/error_handler_test/io_error"
+
+      expect(response).to have_http_status(500)
+      expect(json_body).to eq(
+        "code" => "io_error", "message" => "Failed to write PDF: Permission denied - /srv/out/welcome.pdf",
+        "status" => nil, "requestId" => nil
+      )
+    end
+
     it "answers from an ActionController::API controller too" do
       get "/error_handler_api_test"
 
@@ -98,23 +119,11 @@ RSpec.describe PoliPage::Rails::ErrorHandler, type: :request do
       expect(ErrorHandlerLiveMidstreamTestController::REPORTED.size).to eq(1)
     end
 
-    it "keeps exactly the four wire keys when the SDK payload has another key" do
-      error = PoliPage::ConnectionError.new
-      def error.to_payload = super.merge(retry_after: 3)
-
-      expect(described_class.body(error)).to eq(
-        "code" => "network_error", "message" => "Network request failed", "status" => 503, "requestId" => nil
-      )
-    end
-
-    it "builds the body from the SDK's to_payload, renaming request_id to requestId" do
+    it "forwards the SDK's to_payload as is" do
       error = PoliPage::NotFoundError.new("m", code: "C", status: 404, request_id: "req_1")
-      payload = error.to_payload
-      expect(described_class.body(error)).to eq(
-        "code" => payload[:code], "message" => payload[:message], "status" => payload[:status],
-        "requestId" => payload[:request_id]
-      )
-      expect(described_class.body(error).keys).to eq(%w[code message status requestId])
+
+      expect(described_class.body(error)).to eq(error.to_payload)
+      expect(described_class.body(error)).to eq(code: "C", message: "m", status: 404, requestId: "req_1")
     end
 
     it "answers application/json when the action set a PDF Content-Type first" do

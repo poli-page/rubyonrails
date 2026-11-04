@@ -13,7 +13,13 @@ class ErrorHandlerTestController < ActionController::Base
     },
     "network" => -> { PoliPage::ConnectionError.new },
     "timeout" => -> { PoliPage::TimeoutError.new(timeout: 60) },
-    "no_status" => -> { PoliPage::InvalidOptionsError.new("apiKey is required") }
+    "no_status" => -> { PoliPage::InvalidOptionsError.new("apiKey is required") },
+    # A proxy answered the render with a 200 HTML page.
+    "invalid_response" => -> { PoliPage::InvalidResponseError.new(status: 200, request_id: "req_proxy") },
+    # render_to_file could not write its file.
+    "io_error" => lambda {
+      PoliPage::FileWriteError.new(cause: Errno::EACCES.new("/srv/out/welcome.pdf"))
+    }
   }.freeze
 
   def show

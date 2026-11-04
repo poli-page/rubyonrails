@@ -21,7 +21,7 @@ This gem wires the official [`poli-page`](https://rubygems.org/gems/poli-page) R
 
 - Ruby 3.2 or newer
 - Rails 7.0, 7.1, 7.2, or 8.0
-- `poli-page` SDK 0.11.0 or a later 0.x release (`~> 0.11`), the first release with environment keys and without template versions; Bundler installs it with the gem
+- `poli-page` SDK 0.13.x (`~> 0.13.0`); Bundler installs it with the gem
 
 ## Install
 
@@ -29,7 +29,7 @@ Add the gem to your `Gemfile`:
 
 ```ruby
 # Gemfile
-gem "poli_page-rails", "~> 0.11"
+gem "poli_page-rails", "~> 0.13.0"
 ```
 
 Then run:
@@ -135,6 +135,8 @@ The SDK raises a fixed hierarchy under `PoliPage::Error`. The four categories yo
 - **Request rejected** — `PoliPage::ValidationError`. The template, project, or `data` payload was rejected at `400`.
 - **Network / transport** — `PoliPage::ConnectionError`, `PoliPage::TimeoutError`. Network failure, DNS, TLS, or timeout.
 
+Two more come from outside the API: `PoliPage::InvalidResponseError` (`invalid_response`) when a 2xx answer's body is not JSON, usually from a proxy between your app and the API, and `PoliPage::FileWriteError` (`io_error`) when `render_to_file` cannot write its file.
+
 A `PoliPage::Error` you do not rescue reaches the [default error handler](#default-error-handler).
 
 This gem adds one Rails-specific error: `PoliPage::Rails::ConfigurationError`, raised by `ConfigurationValidator` on the first `PoliPage.client` call when the initializer is invalid. It inherits from `PoliPage::Error`, so a single `rescue PoliPage::Error` catches everything.
@@ -158,16 +160,16 @@ end
 
 ### Default error handler
 
-The gem answers every `PoliPage::Error` a controller action raises without rescuing it. The Railtie includes `PoliPage::Rails::ErrorHandler` into `ActionController::Base` and `ActionController::API`, which `rescue_from PoliPage::Error` and render the SDK's `Error#to_payload` as JSON, with its keys in camelCase:
+The gem answers every `PoliPage::Error` a controller action raises without rescuing it. The Railtie includes `PoliPage::Rails::ErrorHandler` into `ActionController::Base` and `ActionController::API`, which `rescue_from PoliPage::Error` and render the SDK's `Error#to_payload` as JSON, as is:
 
 ```json
 { "code": "TEMPLATE_NOT_FOUND", "message": "Template 'does-not-exist' not found in project 'getting-started'.", "status": 404, "requestId": "req_…" }
 ```
 
-- The HTTP status is the payload's `status`: the API's status for an API error, `503` for `network_error`, `504` for `timeout`. When the status is unknown (for example `configuration_error`), the answer is `500` and the body's `status` is `null`.
+- The HTTP status is the payload's `status`: the API's status for an API error, `503` for `network_error`, `504` for `timeout`, `502` for `invalid_response` (the 2xx a proxy sent never reaches your client). When the status is unknown (for example `configuration_error` or `io_error`), the answer is `500` and the body's `status` is `null`.
 - `requestId` is the API's `x-request-id`, or `null` when there is none.
 - The `Content-Type` is `application/json`, even when the action had set another one (a PDF route, say) before the error.
-- The keys are fixed: your app's inflections (an `ID` acronym, for example) do not change them.
+- The keys are the SDK's, spelled the same by every Poli Page SDK: your app's inflections (an `ID` acronym, for example) do not change them.
 
 The handler cannot answer once a response is committed: an `ActionController::Live` stream is committed when it writes its first chunk or when it is closed. The handler then raises the error again, so Live logs it and calls the stream's `on_error`. After PDF bytes went out, the client gets a short `200` (the PDF cut where the error happened); compare the bytes received with the descriptor's `sizeBytes` if you need to detect it.
 
@@ -211,9 +213,11 @@ bin/rails server
 
 ## Compatibility
 
-| Gem | Rails | Ruby |
-|---|---|---|
-| 0.11.x | 7.0 / 7.1 / 7.2 / 8.0 | 3.2 – 3.4 |
+| Gem | `poli-page` SDK | Rails | Ruby |
+|---|---|---|---|
+| 0.13.x | 0.13.x | 7.0 / 7.1 / 7.2 / 8.0 | 3.2 – 3.4 |
+
+The gem shares its major.minor with the Poli Page API and requires the SDK of the same minor (see [RELEASING.md](RELEASING.md#versions)).
 
 You receive fixes for the latest two Rails majors. Older majors receive security fixes for six months after their upstream EOL.
 
