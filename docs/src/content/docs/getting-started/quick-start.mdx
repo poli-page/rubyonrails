@@ -1,0 +1,41 @@
+---
+title: Quick start
+description: Return a generated PDF from a Rails controller action with PoliPage.client and render_pdf.
+---
+
+After the install, one controller action renders a template and answers the PDF. `PoliPage.client` renders, and `render_pdf` from the `Renderable` concern sets the response headers.
+
+## Install and configure
+
+Add the gem, set `POLI_PAGE_API_KEY` and run `bin/rails generate poli_page:install`, as [Install](../install/) describes. Nothing else registers the integration.
+
+## Render from a controller
+
+Include `PoliPage::Rails::Renderable` in the controller. `PoliPage.client.render.pdf` returns the PDF bytes, and `render_pdf(bytes, filename:, inline:)` sends them with `Content-Type: application/pdf`, `Cache-Control: private, no-store`, `X-Content-Type-Options: nosniff` and an RFC 6266 `Content-Disposition`. Use `inline: true` to show the PDF in the browser instead of downloading it.
+
+To try it before you own a template, render the `welcome` template of the `getting-started` project, which every organization has in its `sandbox` environment.
+
+## Example
+
+```ruby
+# app/controllers/invoices_controller.rb
+class InvoicesController < ApplicationController
+  include PoliPage::Rails::Renderable
+
+  def show
+    invoice = Invoice.find(params[:id])
+    bytes = PoliPage.client.render.pdf(
+      project:  "billing",
+      template: "invoice",
+      data:     { invoiceNumber: "INV-001" }
+    )
+    render_pdf(bytes, filename: "#{invoice.number}.pdf", inline: false)
+  end
+end
+```
+
+## See also
+
+- [Client access](../../concepts/client-access/)
+- [Responses](../../concepts/responses/)
+- [Errors](../../production/errors/)

@@ -1,0 +1,92 @@
+---
+title: Errors
+description: How SDK errors surface in Rails, the JSON the default error handler answers, and how to handle errors yourself.
+---
+
+The SDK raises a fixed hierarchy under `PoliPage::Error`. This gem adds one class, `PoliPage::Rails::ConfigurationError`, and a default handler that answers every `PoliPage::Error` an action raises, so an unrescued error becomes a JSON response instead of a 500 page.
+
+## The error
+
+`PoliPage::Error` carries `code`, `status`, `request_id` and `message`. These are the categories you usually branch on:
+
+- **Auth**: `PoliPage::AuthenticationError`, `PoliPage::PermissionDeniedError`. A bad or revoked key, or a blocked organization.
+- **Rate limit**: `PoliPage::RateLimitError`. The API answered `429`.
+- **Request rejected**: `PoliPage::ValidationError`. The template, project or `data` was rejected with `400`.
+- **Network and transport**: `PoliPage::ConnectionError`, `PoliPage::TimeoutError`.
+
+`PoliPage::InvalidResponseError` (`invalid_response`) is raised when a 2xx answer's body is not JSON, usually because of a proxy. `PoliPage::FileWriteError` (`io_error`) is raised when `render_to_file` cannot write its file.
+
+`PoliPage::Rails::ConfigurationError` inherits from `PoliPage::Error` and has the code `configuration_error` and no status. It is raised on the first `PoliPage.client` call when the initializer is invalid, so one `rescue PoliPage::Error` catches everything.
+
+## What the handler answers
+
+The Railtie includes `PoliPage::Rails::ErrorHandler` into `ActionController::Base` and `ActionController::API`. It does a `rescue_from PoliPage::Error` and renders the SDK's `Error#to_payload` as JSON, as is:
+
+```json
+{ "code": "TEMPLATE_NOT_FOUND", "message": "Template 'does-not-exist' not found in project 'getting-started'.", "status": 404, "requestId": "req_…" }
+```
+
+| Error | HTTP status | Body `status` |
+| --- | --- | --- |
+| An API error | the API's status | the API's status |
+| `network_error` | `503` | `503` |
+| `timeout` | `504` | `504` |
+| `invalid_response` | `502` | `502` |
+| No status, for example `configuration_error` or `io_error` | `500` | `null` |
+
+- `requestId` is the API's `x-request-id`, or `null` when there is none.
+- The `Content-Type` is `application/json`, even when the action had already set another one, as a PDF route does.
+- The keys are the SDK's, spelled the same by every Poli Page SDK. Your app's inflections, an `ID` acronym for example, do not change them.
+
+### Live streams
+
+The handler cannot answer once the response is committed, and an `ActionController::Live` stream is committed when it writes its first chunk or is closed. It then raises the error again, so Live logs it and calls the stream's `on_error`. The client gets a short `200`, the PDF cut where the error happened. To detect this, compare the bytes received with the descriptor's `sizeBytes`.
+
+For an error before the first byte to get the JSON answer, in a Live action:
+
+- set the PDF headers and write the first chunk only after the SDK call has started;
+- close the stream only once you have written to it (`ensure response.stream.close if started`). The usual unconditional `ensure response.stream.close` commits an empty `200` before the handler runs.
+
+## Handle errors yourself
+
+A `rescue_from` in your own controllers, for `PoliPage::Error`, one of its subclasses or `StandardError`, takes precedence over the handler, as usual in Rails. To leave the handler out entirely:
+
+```ruby
+# config/initializers/poli_page.rb
+Rails.application.config.poli_page.tap do |c|
+  c.error_handler = false
+end
+```
+
+The value must be `true` or `false`: the app refuses to boot with anything else.
+
+## Example
+
+```ruby
+# app/controllers/invoices_controller.rb
+class InvoicesController < ApplicationController
+  include PoliPage::Rails::Renderable
+
+  def show
+    bytes = PoliPage.client.render.pdf(
+      project: "billing", template: "invoice", data: { invoiceNumber: "INV-001" }
+    )
+    render_pdf(bytes, filename: "invoice.pdf")
+  rescue PoliPage::ValidationError => e
+    Rails.logger.warn("PoliPage validation failed: #{e.message}")
+    head :unprocessable_entity
+  rescue PoliPage::RateLimitError
+    head :too_many_requests
+  rescue PoliPage::AuthenticationError, PoliPage::PermissionDeniedError
+    head :forbidden
+  rescue PoliPage::ConnectionError, PoliPage::TimeoutError
+    head :bad_gateway
+  end
+end
+```
+
+## See also
+
+- [Configuration](../../concepts/configuration/)
+- [Responses](../../concepts/responses/)
+- [Testing](../testing/)

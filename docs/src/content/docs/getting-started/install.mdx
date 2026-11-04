@@ -1,0 +1,69 @@
+---
+title: Install
+description: Install the poli_page-rails gem, set your API key and run the generator that writes the initializer.
+---
+
+The Rails integration ships as the `poli_page-rails` gem on RubyGems. It wraps the Ruby SDK, `poli-page`, in a Rails engine, and Bundler installs the SDK with it.
+
+## Requirements
+
+- Ruby 3.2 or newer
+- Rails 7.0, 7.1, 7.2 or 8.0 (`railties`, `actionpack` and `activesupport` `>= 7.0, < 9`)
+- The `poli-page` SDK `~> 0.13.0`, the same minor as this gem
+- A Poli Page API key, from [poli.page/dashboard](https://poli.page/dashboard)
+
+CI tests Ruby 3.2, 3.3 and 3.4 against Rails 7.0, 7.1, 7.2 and 8.0.
+
+## Install the gem
+
+```ruby
+# Gemfile
+gem "poli_page-rails", "~> 0.13.0"
+```
+
+```bash
+bundle install
+```
+
+## Set your API key
+
+Put the key in the environment your app reads:
+
+```bash
+# .env
+POLI_PAGE_API_KEY=pp_sandbox_xxx
+```
+
+A key is `pp_{environment}_{32 lowercase hex}`, where `{environment}` is the environment it belongs to. The key alone selects the environment, so a render never names a version:
+
+| Environment | Key | Watermark | Counted |
+| --- | --- | --- | --- |
+| `sandbox` (every org) | `pp_sandbox_…` | yes | no |
+| `live` (every org, deletable on Pro+) | `pp_live_…` | no | yes |
+| created on Pro+ (e.g. `staging`) | `pp_staging_…` | no | yes |
+
+"Counted" means the render counts toward the organization's monthly PDF quota.
+
+## Run the generator
+
+The gem is an engine: a Railtie installs the configuration object, so there is nothing to register. The generator writes a commented initializer for you to edit:
+
+```bash
+bin/rails generate poli_page:install
+```
+
+It creates `config/initializers/poli_page.rb`, which reads `POLI_PAGE_API_KEY` with `ENV.fetch`. Restart the app after you set the key. To check the setup end to end, run the example app in the repo's [`example-app/`](https://github.com/poli-page/rubyonrails/tree/main/example-app).
+
+## Example
+
+```ruby
+# config/initializers/poli_page.rb
+Rails.application.config.poli_page.tap do |c|
+  c.api_key = ENV.fetch("POLI_PAGE_API_KEY")
+end
+```
+
+## See also
+
+- [Quick start](../quick-start/)
+- [Configuration](../../concepts/configuration/)

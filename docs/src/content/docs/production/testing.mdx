@@ -1,0 +1,57 @@
+---
+title: Testing
+description: Stub PoliPage.client in request specs to test controllers without calling the Poli Page API.
+---
+
+Every part of the integration reaches the API through `PoliPage.client`. In specs you stub that one method, so `Renderable`, the error handler and your routes run without a network call.
+
+## Stub the client
+
+Return a fake from `PoliPage.client` with `allow(PoliPage).to receive(:client)`. The fake needs only the methods your code calls, such as `render.pdf`. Because `PoliPage.client` is stubbed, no `api_key` is needed in the test environment.
+
+## Fake an error
+
+Make a fake method raise an SDK error, for example `PoliPage::ValidationError.new("nope", code: "VALIDATION_ERROR", status: 400, request_id: "req_1")`. The default error handler answers it as in production, so you can assert the JSON body and the status.
+
+## Test with the real client
+
+To exercise the real client against a stubbed HTTP layer, set `config.poli_page.api_key` to a well-formed key such as `pp_sandbox_` followed by 32 zeros, and call `PoliPage.reset_client!` before and after the example so the memoized instance does not leak between specs.
+
+## Example
+
+```ruby
+# spec/requests/invoices_spec.rb
+require "rails_helper"
+
+RSpec.describe "Invoices", type: :request do
+  let(:render_api) { double("render", pdf: "%PDF-1.4 fake") }
+
+  before do
+    allow(PoliPage).to receive(:client).and_return(double("client", render: render_api))
+  end
+
+  it "sends the PDF" do
+    get "/invoices/1"
+
+    expect(response).to have_http_status(:ok)
+    expect(response.content_type).to start_with("application/pdf")
+    expect(response.headers["Cache-Control"]).to include("no-store")
+  end
+
+  it "answers a validation error as JSON" do
+    allow(render_api).to receive(:pdf).and_raise(
+      PoliPage::ValidationError.new("nope", code: "VALIDATION_ERROR", status: 400, request_id: "req_1")
+    )
+
+    get "/invoices/1"
+
+    expect(response).to have_http_status(:bad_request)
+    expect(response.parsed_body).to include("code" => "VALIDATION_ERROR", "status" => 400)
+  end
+end
+```
+
+## See also
+
+- [Client access](../../concepts/client-access/)
+- [Errors](../errors/)

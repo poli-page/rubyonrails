@@ -1,0 +1,43 @@
+---
+title: Observability
+description: Subscribe to the poli_page.retry and poli_page.error ActiveSupport::Notifications events for logging and metrics.
+---
+
+The SDK has two hooks, `on_retry` and `on_error`. The gem bridges both into `ActiveSupport::Notifications`, so subscribers such as `lograge`, `appsignal` or `scout_apm` see Poli Page retries and failures without extra wiring.
+
+## The events
+
+The bridge is on by default and costs nothing when nothing subscribes.
+
+| Event | Fires | Payload |
+| --- | --- | --- |
+| `poli_page.retry` | before each retry attempt | `attempt` (the attempt about to start), `delay_ms` (the wait before it, in milliseconds), `reason` (the `PoliPage::Error` that caused the retry) |
+| `poli_page.error` | once, when a request fails terminally after its retries | `error` (the `PoliPage::Error` about to be raised) |
+
+The names are available as `PoliPage::Rails::Notifications::RETRY_EVENT_NAME` and `ERROR_EVENT_NAME`.
+
+## Turn the bridge off or replace it
+
+Set `c.notifications = false` to install no bridge. Setting `c.on_retry` or `c.on_error` to your own callable replaces the bridge for that hook: the callable receives a `PoliPage::RetryEvent` (`attempt`, `delay_ms`, `reason`) or the `PoliPage::Error`. To keep the bridge and add your own code, subscribe to the events.
+
+## Example
+
+```ruby
+# config/initializers/poli_page_instrumentation.rb
+ActiveSupport::Notifications.subscribe("poli_page.retry") do |event|
+  Rails.logger.warn(
+    "PoliPage retry #{event.payload[:attempt]} in #{event.payload[:delay_ms]}ms: " \
+    "#{event.payload[:reason].code}"
+  )
+end
+
+ActiveSupport::Notifications.subscribe("poli_page.error") do |event|
+  error = event.payload[:error]
+  Rails.logger.error("PoliPage failed: #{error.code} (#{error.request_id})")
+end
+```
+
+## See also
+
+- [Configuration](../../concepts/configuration/)
+- [Errors](../errors/)

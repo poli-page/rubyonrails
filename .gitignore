@@ -72,3 +72,8 @@ build-iPhoneSimulator/
 CLAUDE.md
 docs/plan/
 docs/spec/
+
+# Starlight docs site
+docs/node_modules/
+docs/dist/
+docs/.astro/

@@ -1,0 +1,22 @@
+---
+title: SDK
+description: The Ruby SDK under poli_page-rails, and where its documentation lives.
+---
+
+`poli_page-rails` wraps the Poli Page Ruby SDK, [`poli-page`](https://rubygems.org/gems/poli-page). `PoliPage.client` returns the SDK's own `PoliPage::Client`, so `render`, `documents` and `render_to_file` are the SDK's methods, and its documentation covers every method and type they have.
+
+→ **Ruby SDK documentation**: https://poli-page.github.io/sdk-ruby/
+
+## Versions
+
+The gem requires `poli-page` `~> 0.13.0`, the same major.minor as the gem itself: both share the major.minor of the Poli Page API.
+
+| `poli_page-rails` | `poli-page` | Rails | Ruby |
+| --- | --- | --- | --- |
+| `0.13.x` | `0.13.x` | 7.0, 7.1, 7.2 or 8.0 | 3.2 to 3.4 |
+
+## Where to look
+
+- Render input, render methods and stored documents: the SDK's [Quick start](https://poli-page.github.io/sdk-ruby/getting-started/quick-start/) and [Client](https://poli-page.github.io/sdk-ruby/reference/client/) pages.
+- Retries, timeouts and cancellation: the SDK's [Retries and idempotency](https://poli-page.github.io/sdk-ruby/production/retries-and-idempotency/) page.
+- Every error class and code: the SDK's [Errors](https://poli-page.github.io/sdk-ruby/production/errors/) page.
