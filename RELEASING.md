@@ -31,9 +31,11 @@ What the workflow does on a tag push:
    RuboCop, then every spec except the live API one (`spec/integration`), including the API
    contract's cases with the contract pinned by `poli-page/api-contract`.
 3. **publish**, in the `rubygems-release` GitHub Environment (waits for a required reviewer):
-   `rubygems/release-gem` builds the gem from the gemspec and pushes it through Trusted Publishing,
-   then the job creates the GitHub Release with the CHANGELOG section as notes and the `.gem`
-   attached.
+   `scripts/exchange-rubygems-oidc-token.sh` exchanges the job's GitHub OIDC token for a
+   RubyGems.org API key, naming the owner account (see the one-time setup), then
+   `rubygems/release-gem` builds the gem from the gemspec and pushes it with that key, with sigstore
+   attestations. The job then creates the GitHub Release with the CHANGELOG section as notes and the
+   `.gem` attached.
 
 The gem contains `lib/`, `sig/`, `LICENSE`, `README.md` and `CHANGELOG.md` only (see `spec.files` in
 `poli_page-rails.gemspec`). The example app and the specs are not shipped.
@@ -60,8 +62,23 @@ publisher.
    - Deployment branches and tags: **Selected branches and tags**, add the tag rule `v*.*.*`.
    - No secrets or variables are needed.
 
+4. The publish job asserts the account that will own the gem: `RUBYGEMS_OWNER_ID` in the `env` of
+   the `publish` job of `.github/workflows/release.yml`, set to `247441`, the ID of the RubyGems.org
+   account `poli-page` (see `https://rubygems.org/api/v1/gems/poli-page/owners.json`). It is not a
+   secret. RubyGems.org creates a new gem through trusted publishing only when the token exchange
+   names the account whose pending trusted publisher allows it; without it the push is refused
+   with "Trusted publishing can only create a new gem when the workflow declares which RubyGems.org
+   account will own it". `rubygems/release-gem` and `rubygems/configure-rubygems-credentials`
+   cannot send that account yet, so `scripts/exchange-rubygems-oidc-token.sh` does the exchange
+   (`POST /api/v1/oidc/trusted_publisher/exchange_token` with `{"jwt": ..., "owner": "247441"}`)
+   and `release-gem` runs with `setup-trusted-publisher: false`. The value is an ID, not the
+   handle, because a handle can be renamed and taken again. If another account owns the pending
+   trusted publisher, set its ID here.
+
 After the first publish, the pending publisher becomes a regular trusted publisher of the gem.
-Add co-owners with `gem owner poli_page-rails --add <email>` if needed.
+From then on that trusted publisher authorizes each push and RubyGems.org does not use the
+asserted owner, so the workflow keeps sending it. Add co-owners with
+`gem owner poli_page-rails --add <email>` if needed.
 
 ## Per release
 
