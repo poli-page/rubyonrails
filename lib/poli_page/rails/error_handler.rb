@@ -10,11 +10,12 @@ module PoliPage
     #   status: the payload's status, or 500 when it is nil
     #   body:   { "code", "message", "status", "requestId" }
     #
-    # The body is the SDK's Error#to_payload, with its keys renamed to the
-    # wire's camelCase (request_id becomes requestId) and its values untouched.
+    # The body is the SDK's Error#to_payload as is: the SDK names its keys
+    # code, message, status and requestId, the same in every Poli Page SDK.
     # The Content-Type is application/json even when the action had set
-    # another one before the error (a PDF route, for example). Its status is the API status,
-    # 503 for network_error and 504 for timeout, and null when unknown; the
+    # another one before the error (a PDF route, for example). Its status is
+    # the API status, 503 for network_error, 504 for timeout, 502 for
+    # invalid_response, and null when unknown (io_error, for example); the
     # HTTP status falls back to 500 only in that last case.
     #
     # The Railtie includes this concern into ActionController::Base and
@@ -25,19 +26,15 @@ module PoliPage
     module ErrorHandler
       extend ::ActiveSupport::Concern
 
-      # Fixed names, so the host app's inflections (an "ID" acronym, say)
-      # cannot change the wire keys.
-      WIRE_KEYS = { code: "code", message: "message", status: "status", request_id: "requestId" }.freeze
-
       included do
         rescue_from ::PoliPage::Error, with: :render_poli_page_error
       end
 
-      # The JSON body for `error`: its to_payload with the wire's key names,
-      # always exactly these four keys (a key a later SDK adds is left out).
+      # The JSON body for `error`: its to_payload, forwarded as is. JSON.generate
+      # writes the Symbol keys as they are spelled, so the host app's
+      # inflections (an "ID" acronym, say) cannot change them.
       def self.body(error)
-        payload = error.to_payload
-        WIRE_KEYS.to_h { |key, wire| [wire, payload[key]] }
+        error.to_payload
       end
 
       # The HTTP status for `error`: the payload's status, or 500 when unknown.

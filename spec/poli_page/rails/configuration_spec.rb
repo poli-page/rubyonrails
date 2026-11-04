@@ -20,7 +20,7 @@ RSpec.describe PoliPage::Rails::Configuration do
     expect(config.ca_path).to be_nil
   end
 
-  it "defaults notifications to true (default-on, opt-out per spec §10.5)" do
+  it "defaults notifications to true (default-on, opt-out)" do
     expect(described_class.new.notifications).to be true
   end
 

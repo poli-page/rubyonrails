@@ -4,10 +4,29 @@
 `.github/workflows/release.yml` when a `vX.Y.Z` tag is pushed. The workflow uses RubyGems Trusted
 Publishing (OIDC), so no API key is stored in the repository or in GitHub secrets.
 
+## Versions
+
+`poli_page-rails` shares its major.minor with the Poli Page API: gem `0.13.x` talks to API `0.13`,
+passes the [API contract](https://github.com/poli-page/api-contract) `v0.13.0`, and requires the
+`poli-page` SDK of the same minor (`~> 0.13.0`, which RubyGems reads as `>= 0.13.0, < 0.14`; a
+bare `~> 0.13` would allow every later 0.x). Patch numbers are free: a fix to the gem alone is a
+patch, whatever the API's or the SDK's patch. A change of the API contract, a new feature, and a
+raise of the minimum Ruby or Rails version are each a minor. The gem may skip minors when it has
+nothing to ship for one. The release workflow refuses a tag whose major.minor differs from the
+contract version pinned in `.github/workflows/ci.yml` or from the `poli-page` requirement in
+`poli_page-rails.gemspec` and `example-app/Gemfile`.
+
+## How a release runs
+
 What the workflow does on a tag push:
 
 1. **verify**: fails unless the tag (without its `v`) equals `PoliPage::Rails::VERSION` in
-   `lib/poli_page/rails/version.rb` and `CHANGELOG.md` has a `## [X.Y.Z]` section.
+   `lib/poli_page/rails/version.rb`, `CHANGELOG.md` has a `## [X.Y.Z]` section, and
+   `example-app/Gemfile.lock` locks `poli_page-rails (X.Y.Z)`. Then
+   `scripts/check-release-versions.sh` requires the pinned API contract commit to carry a stable
+   tag `vX.Y.Z` of the tag's major.minor (the `# vX.Y.Z` comment next to the pin is not trusted,
+   and every workflow must pin the same commit), and `poli-page` to be required as `~> X.Y.Z` of
+   the tag's major.minor. The error names both versions.
 2. **gates**: the CI suite on every supported Ruby (3.2, 3.3, 3.4) and Rails (7.0, 7.1, 7.2, 8.0):
    RuboCop, then every spec except the live API one (`spec/integration`), including the API
    contract's cases with the contract pinned by `poli-page/api-contract`.
@@ -50,6 +69,11 @@ Add co-owners with `gem owner poli_page-rails --add <email>` if needed.
    `[Unreleased]` entries of `CHANGELOG.md` into a `## [X.Y.Z] - YYYY-MM-DD` section, leave an empty
    `## [Unreleased]` above it, and update the compare links at the bottom. Update the
    `poli_page-rails (X.Y.Z)` line of `example-app/Gemfile.lock` (`cd example-app && bundle lock`).
+   For a new minor `X.Y`: require `poli-page` `~> X.Y.0` in `poli_page-rails.gemspec` and
+   `example-app/Gemfile` (then `bundle lock` again), pin the API contract's `vX.Y.Z` commit in
+   `.github/workflows/ci.yml` and `.github/workflows/release.yml`, update the compatibility table
+   in `README.md`, and check it all with `./scripts/check-release-versions.sh X.Y.Z` (it needs Ruby
+   and network access to list the contract's tags).
 2. Open a PR, wait for CI to pass, and merge it into `main`.
 3. Tag the merge commit and push the tag:
 
@@ -63,7 +87,8 @@ Add co-owners with `gem owner poli_page-rails --add <email>` if needed.
    (Review deployments → `rubygems-release` → Approve).
 5. Check the gem at <https://rubygems.org/gems/poli_page-rails> and the GitHub Release for the tag.
 
-If `verify` fails, the tag does not match the version or the CHANGELOG has no section for it:
-delete the tag (`git push origin :refs/tags/vX.Y.Z && git tag -d vX.Y.Z`), fix `main` through a PR,
-and tag again. A version that reached RubyGems cannot be published again; release a new patch
+If `verify` fails, the tag does not match the version, the CHANGELOG or the example app's
+lockfile, or its major.minor is not the pinned contract's or the required SDK's: delete the tag
+(`git push origin :refs/tags/vX.Y.Z && git tag -d vX.Y.Z`), fix `main` through a PR, and tag
+again. A version that reached RubyGems cannot be published again; release a new patch
 version instead.

@@ -60,9 +60,9 @@ reviews:
         This is the poli_page-rails gem wrapping the poli-page Ruby SDK. Keep it a thin Rails
         integration: do not reimplement HTTP transport, retry, idempotency or error mapping (they
         live in the SDK). Public API (PoliPage.client, Configuration, Renderable, notifications)
-        must stay consistent with the other poli-page SDKs and the API spec (errors are
-        { error: CODE_STRING, detail?, issues? } (flat, API spec §4.1)), with no breaking change without a major version bump and a
-        CHANGELOG.md entry.
+        must stay consistent with the other poli-page SDKs and integrations, with no breaking change
+        without a major version bump and a CHANGELOG.md entry. Surface SDK errors as the SDK's
+        to_payload body { code, message, status, requestId } with its status, never swallow them.
     - path: "sig/**/*.rbs"
       instructions: >-
         RBS signatures must match the Ruby implementation in lib/ for every public method; flag

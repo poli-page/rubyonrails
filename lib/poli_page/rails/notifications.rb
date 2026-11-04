@@ -12,8 +12,9 @@ module PoliPage
     #   - "poli_page.error"  — fired on terminal failure (post-retries)
     #
     # Default-on: the Railtie installs the bridges as the default on_retry /
-    # on_error config values. Users opt out via c.notifications = false in
-    # the initializer. See spec §10.5 for the rationale.
+    # on_error config values, so retries and failures reach the usual Rails
+    # instrumentation subscribers without extra wiring. Users opt out via
+    # c.notifications = false in the initializer.
     module Notifications
       RETRY_EVENT_NAME = "poli_page.retry"
       ERROR_EVENT_NAME = "poli_page.error"
