@@ -22,6 +22,11 @@ SimpleCov.start do
   add_filter "/spec/"
   add_filter "/example-app/"
   enable_coverage :branch
+
+  # Coverage gate, as in the poli-page SDK. The measured coverage is well above
+  # these floors; bump them when it justifies it. Override locally by exporting
+  # `SIMPLECOV_NO_FAIL=1` (e.g. when iterating on a single spec file).
+  minimum_coverage line: 90, branch: 75 unless ENV["SIMPLECOV_NO_FAIL"] == "1"
 end
 
 require "dotenv"

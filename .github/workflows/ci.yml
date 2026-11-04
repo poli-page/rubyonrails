@@ -37,6 +37,12 @@ jobs:
           BUNDLE_GEMFILE="gemfiles/rails_${{ matrix.rails }}.gemfile" bundle install --jobs 4 --retry 3
       - name: Lint
         run: bundle exec rubocop
+      - name: RBS validate
+        # The collection supplies the Rails and stdlib types that sig/ refers
+        # to; the lock file is generated, not committed.
+        run: |
+          bundle exec rbs collection install
+          bundle exec rbs -I sig validate
       - name: API contract
         id: contract
         uses: poli-page/api-contract@1f705b3ce3e15ff56e2f7b8249c1a2983af2312c # v0.13.0

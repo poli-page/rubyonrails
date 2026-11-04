@@ -77,3 +77,5 @@ docs/spec/
 docs/node_modules/
 docs/dist/
 docs/.astro/
+/.gem_rbs_collection/
+/rbs_collection.lock.yaml
