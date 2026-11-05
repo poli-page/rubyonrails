@@ -54,6 +54,8 @@ jobs:
         # the integration job.
         env:
           POLI_CONTRACT: ${{ steps.contract.outputs.path }}
+          # Whole unit suite: judge it against the coverage floors in spec_helper.rb.
+          SIMPLECOV_ENFORCE: "1"
         run: bundle exec appraisal "rails-${{ matrix.rails }}" rspec --exclude-pattern "spec/integration/**/*"
 
       - name: Upload coverage to Codecov
