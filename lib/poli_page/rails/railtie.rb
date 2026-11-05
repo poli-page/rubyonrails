@@ -3,12 +3,19 @@
 require "rails/railtie"
 
 require_relative "configuration_validator"
+require_relative "deprecator"
 require_relative "error_handler"
 require_relative "notifications"
 
 module PoliPage
   module Rails
     class Railtie < ::Rails::Railtie
+      # Before config/initializers/*.rb, so a deprecation hit there follows
+      # the app's config.active_support.deprecation setting (Rails 7.1+).
+      initializer "poli_page.deprecator", before: :load_config_initializers do |app|
+        app.deprecators[:poli_page] = PoliPage::Rails.deprecator if app.respond_to?(:deprecators)
+      end
+
       initializer "poli_page.configure", before: :load_config_initializers do |app|
         # Why: Rails::Application::Configuration#method_missing raises
         # NoMethodError on read when the key has never been set, so the

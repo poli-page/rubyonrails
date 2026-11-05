@@ -102,7 +102,7 @@ Every key is optional except `api_key`. The SDK's own defaults apply when a valu
 |---|---|---|
 | `api_key` | — | Required. A key for one environment: `pp_sandbox_…`, `pp_live_…`, or `pp_{environment}_…` (see [API keys](#api-keys)). |
 | `base_url` | `https://api.poli.page` | Override for the develop environment or a private proxy. |
-| `timeout` | SDK default | Request timeout in seconds. Must be in `1..600`. |
+| `timeout` | SDK default | Request timeout in seconds. A positive number, at most `600`. |
 | `max_retries` | SDK default | Retry attempts on retryable failures. Must be in `0..10`. |
 | `retry_delay` | SDK default | Base backoff delay in seconds. Must be in `0..30`. |
 | `logger` | `Rails.logger` | Any `Logger`-compatible instance. |
