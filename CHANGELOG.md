@@ -6,12 +6,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Removed
+### Deprecated
 
-- `config.poli_page.user_agent`. The setter never had an effect: the
-  `poli-page` SDK sends its own `User-Agent` and takes no option for it, so
-  the value was never passed on. An initializer that still sets it now fails
-  at boot with `NoMethodError` instead of being silently ignored.
+- `config.poli_page.user_agent`. It never had an effect: the `poli-page` SDK
+  sends its own `User-Agent` and takes no option for it, so the value was
+  never passed on. Setting it now emits a deprecation warning (through
+  `PoliPage::Rails.deprecator`, registered in `Rails.application.deprecators`
+  on Rails 7.1+) and still does nothing. It will be removed in a later minor
+  release.
 
 ## [0.13.0] - 2026-11-04
 

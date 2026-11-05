@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "deprecator"
+
 module PoliPage
   module Rails
     class Configuration
@@ -23,6 +25,21 @@ module PoliPage
         @ca_path       = nil
         @notifications = true
         @error_handler = true
+      end
+
+      USER_AGENT_DEPRECATION = "config.poli_page.user_agent has no effect, the Poli Page SDK sends " \
+                               "its own User-Agent; remove it. It will be removed in a later minor release."
+
+      # Deprecated no-op: the SDK takes no User-Agent option, so the value was
+      # never passed on. Kept so that an initializer that sets it still boots.
+      def user_agent=(_value)
+        PoliPage::Rails.deprecator.warn(USER_AGENT_DEPRECATION)
+      end
+
+      # Deprecated no-op, see #user_agent=. Always nil.
+      def user_agent
+        PoliPage::Rails.deprecator.warn(USER_AGENT_DEPRECATION)
+        nil
       end
 
       # Single source of truth for SDK kwargs. Compact drops every nil entry,

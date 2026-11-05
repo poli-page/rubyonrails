@@ -1,6 +1,10 @@
 module PoliPage
   module Rails
+    def self.deprecator: () -> ActiveSupport::Deprecation
+
     class Configuration
+      USER_AGENT_DEPRECATION: String
+
       attr_accessor api_key: String?
       attr_accessor base_url: String?
       attr_accessor timeout: Numeric?
@@ -16,6 +20,8 @@ module PoliPage
       attr_accessor error_handler: bool
 
       def initialize: () -> void
+      def user_agent=: (untyped) -> void
+      def user_agent: () -> nil
       def to_client_kwargs: () -> Hash[Symbol, untyped]
     end
 

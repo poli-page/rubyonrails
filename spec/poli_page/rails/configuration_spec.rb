@@ -59,7 +59,41 @@ RSpec.describe PoliPage::Rails::Configuration do
       client_keywords = PoliPage::Client.instance_method(:initialize).parameters.map(&:last)
       options = described_class.instance_methods(false).grep(/\A\w+=\z/).map { _1.to_s.chomp("=").to_sym }
 
-      expect(options - %i[notifications error_handler]).to all(be_in(client_keywords))
+      # notifications and error_handler are the integration's own switches;
+      # user_agent is a deprecated no-op (see "user_agent (deprecated)").
+      expect(options - %i[notifications error_handler user_agent]).to all(be_in(client_keywords))
+    end
+  end
+
+  describe "user_agent (deprecated)" do
+    it "warns that it has no effect when set" do
+      allow(PoliPage::Rails.deprecator).to receive(:warn)
+
+      described_class.new.user_agent = "MyApp/1.0"
+
+      expect(PoliPage::Rails.deprecator).to have_received(:warn).with(/user_agent has no effect.*remove it/)
+    end
+
+    it "reads as nil, with the same warning" do
+      allow(PoliPage::Rails.deprecator).to receive(:warn)
+
+      expect(described_class.new.user_agent).to be_nil
+      expect(PoliPage::Rails.deprecator).to have_received(:warn).with(/user_agent has no effect/)
+    end
+
+    it "still builds the client, without passing user_agent on" do
+      allow(PoliPage::Rails.deprecator).to receive(:warn)
+      config = described_class.new
+      config.api_key = PoliPage::Rails::Test::SANDBOX_KEY
+      config.user_agent = "MyApp/1.0"
+
+      PoliPage::Rails::ConfigurationValidator.validate!(config)
+      expect(config.to_client_kwargs).not_to have_key(:user_agent)
+      expect(PoliPage::Client.new(**config.to_client_kwargs)).to be_a(PoliPage::Client)
+    end
+
+    it "is registered with the app's deprecators", if: Rails.application.respond_to?(:deprecators) do
+      expect(Rails.application.deprecators[:poli_page]).to be(PoliPage::Rails.deprecator)
     end
   end
 end
