@@ -3,7 +3,7 @@
 module PoliPage
   module Rails
     class Configuration
-      attr_accessor :api_key, :base_url, :timeout, :user_agent,
+      attr_accessor :api_key, :base_url, :timeout,
                     :max_retries, :retry_delay,
                     :logger, :on_retry, :on_error,
                     :proxy, :ca_file, :ca_path,
@@ -13,7 +13,6 @@ module PoliPage
         @api_key       = nil
         @base_url      = nil
         @timeout       = nil
-        @user_agent    = nil
         @max_retries   = nil
         @retry_delay   = nil
         @logger        = nil
@@ -27,9 +26,7 @@ module PoliPage
       end
 
       # Single source of truth for SDK kwargs. Compact drops every nil entry,
-      # so the SDK's own defaults take over for every unset key. user_agent
-      # is intentionally NOT included — PoliPage::Client#initialize does not
-      # accept it (poli-page 0.11).
+      # so the SDK's own defaults take over for every unset key.
       def to_client_kwargs
         {
           api_key:     api_key,

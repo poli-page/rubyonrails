@@ -11,7 +11,6 @@ RSpec.describe PoliPage::Rails::Configuration do
     expect(config.timeout).to be_nil
     expect(config.max_retries).to be_nil
     expect(config.retry_delay).to be_nil
-    expect(config.user_agent).to be_nil
     expect(config.logger).to be_nil
     expect(config.on_retry).to be_nil
     expect(config.on_error).to be_nil
@@ -56,12 +55,11 @@ RSpec.describe PoliPage::Rails::Configuration do
       expect(kwargs[:ca_file]).to eq("/etc/ssl/corp.pem")
     end
 
-    it "does not include user_agent (the SDK does not currently accept it)" do
-      config = described_class.new
-      config.api_key = PoliPage::Rails::Test::SANDBOX_KEY
-      config.user_agent = "MyApp/1.0"
+    it "maps every option to a PoliPage::Client keyword" do
+      client_keywords = PoliPage::Client.instance_method(:initialize).parameters.map(&:last)
+      options = described_class.instance_methods(false).grep(/\A\w+=\z/).map { _1.to_s.chomp("=").to_sym }
 
-      expect(config.to_client_kwargs).not_to have_key(:user_agent)
+      expect(options - %i[notifications error_handler]).to all(be_in(client_keywords))
     end
   end
 end
@@ -183,6 +181,10 @@ RSpec.describe PoliPage::Rails::ConfigurationValidator do
 
     it "accepts a positive Integer" do
       expect { validator.validate!(config(timeout: 30)) }.not_to raise_error
+    end
+
+    it "accepts a timeout under one second" do
+      expect { validator.validate!(config(timeout: 0.5)) }.not_to raise_error
     end
 
     it "rejects zero" do

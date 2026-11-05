@@ -6,6 +6,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Removed
+
+- `config.poli_page.user_agent`. The setter never had an effect: the
+  `poli-page` SDK sends its own `User-Agent` and takes no option for it, so
+  the value was never passed on. An initializer that still sets it now fails
+  at boot with `NoMethodError` instead of being silently ignored.
+
 ## [0.13.0] - 2026-11-04
 
 First release on RubyGems. It requires the `poli-page` SDK 0.13
