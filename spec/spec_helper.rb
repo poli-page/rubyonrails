@@ -19,14 +19,18 @@ SimpleCov.formatters = [
 ]
 
 SimpleCov.start do
-  add_filter "/spec/"
-  add_filter "/example-app/"
+  skip "/spec/"
+  skip "/example-app/"
   enable_coverage :branch
 
-  # Coverage gate, as in the poli-page SDK. The measured coverage is well above
-  # these floors; bump them when it justifies it. Override locally by exporting
-  # `SIMPLECOV_NO_FAIL=1` (e.g. when iterating on a single spec file).
-  minimum_coverage line: 90, branch: 75 unless ENV["SIMPLECOV_NO_FAIL"] == "1"
+  # Coverage gate, as in the poli-page SDK, but opt-in. The floors describe
+  # the whole unit suite, so they are judged only when the run is the whole
+  # unit suite: the unit job in ci.yml sets `SIMPLECOV_ENFORCE=1`. A partial run
+  # (one spec file, or the live `spec/integration` job) measures a slice of lib/
+  # and would fail the floors for a reason that is not a coverage regression.
+  # To check the gate locally: `SIMPLECOV_ENFORCE=1 bundle exec rspec
+  # --exclude-pattern "spec/integration/**/*"`.
+  minimum_coverage line: 90, branch: 75 if ENV["SIMPLECOV_ENFORCE"] == "1"
 end
 
 require "dotenv"
