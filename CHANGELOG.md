@@ -6,6 +6,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-11-05
+
 ### Deprecated
 
 - `config.poli_page.user_agent`. It never had an effect: the `poli-page` SDK
@@ -144,5 +146,6 @@ changes made during those lines.
 - Example app: the demo page's status row no longer shows the first 8
   characters of `POLI_PAGE_API_KEY`; no part of the key is shown.
 
-[Unreleased]: https://github.com/poli-page/rubyonrails/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/poli-page/rubyonrails/compare/v0.13.1...HEAD
+[0.13.1]: https://github.com/poli-page/rubyonrails/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/poli-page/rubyonrails/releases/tag/v0.13.0
