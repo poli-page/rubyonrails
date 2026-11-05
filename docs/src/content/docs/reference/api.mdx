@@ -1,0 +1,119 @@
+---
+title: API
+description: Every public constant of the poli_page-rails gem, with signatures and exact behavior.
+---
+
+This page lists everything `require "poli_page-rails"` defines. Rails loads the gem from your `Gemfile`, so you rarely require it yourself. The RBS signatures ship in the gem's [`sig/`](https://github.com/poli-page/rubyonrails/tree/main/sig) folder. The client these helpers return is the Ruby SDK's: see [SDK](../sdk/).
+
+## PoliPage.client
+
+```ruby
+PoliPage.client # => PoliPage::Client
+```
+
+Returns the memoized SDK client. The first call validates `Rails.application.config.poli_page` and builds the client from `to_client_kwargs`. A `Monitor` makes the build thread-safe. Raises `PoliPage::Rails::ConfigurationError` when a setting is invalid.
+
+## PoliPage.reset_client!
+
+```ruby
+PoliPage.reset_client! # => nil
+```
+
+Clears the memoized client so the next `PoliPage.client` builds a new one. For specs only.
+
+## PoliPage::Rails::Renderable
+
+```ruby
+render_pdf(bytes, filename: "document.pdf", inline: false)
+render_preview(result)
+redirect_to_document(descriptor, status: :found)
+```
+
+A controller concern (`ActiveSupport::Concern`).
+
+- `render_pdf` sends `bytes` with `Content-Type: application/pdf`, `Content-Disposition` encoded to RFC 5987 and RFC 6266 (`inline` or `attachment`), `Cache-Control: private, no-store` and `X-Content-Type-Options: nosniff`.
+- `render_preview` renders `result.html` (or `result.to_s` when there is no `html`) as `text/html; charset=utf-8`, with the same two security headers.
+- `redirect_to_document` redirects to `descriptor.presigned_pdf_url` with `Cache-Control: private, no-store`, and allows the other host.
+
+See [Responses](../../concepts/responses/).
+
+## PoliPage::Rails::Configuration
+
+```ruby
+Rails.application.config.poli_page # => PoliPage::Rails::Configuration
+```
+
+Holds the settings as `attr_accessor`s: `api_key`, `base_url`, `timeout`, `max_retries`, `retry_delay`, `logger`, `on_retry`, `on_error`, `proxy`, `ca_file`, `ca_path`, `notifications` and `error_handler`. `notifications` and `error_handler` start `true`, the rest `nil`. `to_client_kwargs` returns the SDK client's keyword arguments with every `nil` entry dropped, so the SDK's defaults apply. See [Configuration](../../concepts/configuration/).
+
+## PoliPage::Rails::ConfigurationValidator
+
+```ruby
+PoliPage::Rails::ConfigurationValidator.validate!(config)
+```
+
+Checks a `Configuration` and raises `ConfigurationError` on the first invalid value. `PoliPage.client` calls it. `API_KEY_FORMAT` is the pattern `pp_{environment}_{32 lowercase hex}` that drives the format warning. `validate_error_handler!(value)` is called by the Railtie at boot.
+
+## PoliPage::Rails::ConfigurationError
+
+```ruby
+class PoliPage::Rails::ConfigurationError < PoliPage::Error; end
+```
+
+Raised for an invalid configuration. Its `code` is `configuration_error` and its `status` and `request_id` are `nil`.
+
+## PoliPage::Rails::ErrorHandler
+
+```ruby
+PoliPage::Rails::ErrorHandler.body(error)   # => the error's to_payload
+PoliPage::Rails::ErrorHandler.status(error) # => Integer
+```
+
+A controller concern that does `rescue_from PoliPage::Error` and renders the payload as JSON. `status` is the payload's status, or `500` when it is `nil`. It raises the error again when the response is already committed. The Railtie includes it into `ActionController::Base` and `ActionController::API` unless `error_handler` is `false`. See [Errors](../../production/errors/).
+
+## PoliPage::Rails::Notifications
+
+```ruby
+PoliPage::Rails::Notifications::RETRY_EVENT_NAME # => "poli_page.retry"
+PoliPage::Rails::Notifications::ERROR_EVENT_NAME # => "poli_page.error"
+PoliPage::Rails::Notifications.retry_bridge      # => lambda
+PoliPage::Rails::Notifications.error_bridge      # => lambda
+```
+
+The two bridge lambdas are memoized. The Railtie installs them as the default `on_retry` and `on_error` when `notifications` is `true`. See [Observability](../../production/observability/).
+
+## PoliPage::Rails::FilenameEncoder
+
+```ruby
+PoliPage::Rails::FilenameEncoder.disposition(filename, inline:) # => String
+```
+
+Builds a `Content-Disposition` value with `ActionDispatch::Http::ContentDisposition.format`, after removing control characters from `filename`. `render_pdf` uses it.
+
+## PoliPage::Rails::Engine and Railtie
+
+```ruby
+class PoliPage::Rails::Engine < ::Rails::Engine; end
+class PoliPage::Rails::Railtie < ::Rails::Railtie; end
+```
+
+The engine is isolated in the `PoliPage::Rails` namespace. The Railtie sets `Rails.application.config.poli_page` before the initializers in `config/initializers` run, includes the error handler after them, and in `after_initialize` defaults `logger` to `Rails.logger` and installs the notification bridges.
+
+## PoliPage::Rails::VERSION
+
+```ruby
+PoliPage::Rails::VERSION # => "0.13.0"
+```
+
+The gem version.
+
+## Generator
+
+```bash
+bin/rails generate poli_page:install
+```
+
+Writes `config/initializers/poli_page.rb`, a commented template of every setting. It takes no options of its own.
+
+## SDK types
+
+The gem does not re-export the SDK. `PoliPage::Error` and its subclasses, `PoliPage::RetryEvent` and the client come from the `poli-page` gem, which `require "poli_page-rails"` loads.

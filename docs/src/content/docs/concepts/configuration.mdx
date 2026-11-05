@@ -1,0 +1,55 @@
+---
+title: Configuration
+description: Every option of Rails.application.config.poli_page, its default and the range the gem validates.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The settings live on `Rails.application.config.poli_page`, a `PoliPage::Rails::Configuration` that the Railtie creates at boot. You set them in `config/initializers/poli_page.rb`, which `bin/rails generate poli_page:install` writes. Only `api_key` is required. A setting left `nil` falls to the SDK's own default.
+
+## Options
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `api_key` | none | Required, a non-empty `String`. A key for one environment: `pp_sandbox_…`, `pp_live_…` or `pp_{environment}_…`. |
+| `base_url` | `nil`, so `https://api.poli.page` | An `http` or `https` URL, for a develop environment or a private proxy. |
+| `timeout` | `nil`, the SDK default | Request timeout in seconds. A positive number, at most `600`. |
+| `max_retries` | `nil`, the SDK default | Retry attempts on retryable failures. An `Integer` from `0` to `10`. |
+| `retry_delay` | `nil`, the SDK default | Base backoff delay in seconds. A number from `0` to `30`. |
+| `logger` | `Rails.logger` | Any `Logger`-compatible object. The Railtie fills it after initialization when you leave it `nil`. |
+| `proxy` | `nil` | HTTP proxy URL, honored by `Net::HTTP` through the SDK. |
+| `ca_file` | `nil` | Path to a CA bundle, for corporate egress. |
+| `ca_path` | `nil` | Path to a CA directory. |
+| `notifications` | `true` | `true` or `false`. `false` turns the `ActiveSupport::Notifications` bridge off. |
+| `on_retry` | the notifications bridge | A callable. Setting it replaces the bridge for retries. |
+| `on_error` | the notifications bridge | A callable. Setting it replaces the bridge for terminal errors. |
+| `error_handler` | `true` | `true` or `false`. `false` leaves out the default error handler. |
+
+## Validation
+
+The gem validates lazily, on the first `PoliPage.client` call, so `assets:precompile` and `db:create` keep working in containers that have no secrets at boot. A bad value raises `PoliPage::Rails::ConfigurationError` (code `configuration_error`) with a message such as `Poli Page max_retries must be an integer between 0 and 10 (got 11).`
+
+- `api_key` is the only value that must be present. A value that does not match `pp_{environment}_{32 lowercase hex}` logs one warning through `config.logger`, naming the format and showing no part of the key. The client starts anyway, and the API answers `401` if the key is wrong.
+- `error_handler` is the exception to the lazy rule: the Railtie checks it at boot, and the app refuses to boot when it is not `true` or `false`.
+
+<Aside type="caution">
+Setting `on_retry` or `on_error` replaces the notifications bridge for that hook. To keep the bridge and add your own code, subscribe to the events instead: see [Observability](../../production/observability/).
+</Aside>
+
+## Example
+
+```ruby
+# config/initializers/poli_page.rb
+Rails.application.config.poli_page.tap do |c|
+  c.api_key     = ENV.fetch("POLI_PAGE_API_KEY")
+  c.base_url    = ENV["POLI_PAGE_BASE_URL"]
+  c.timeout     = 30.0
+  c.max_retries = 3
+  c.retry_delay = 0.5
+end
+```
+
+## See also
+
+- [Client access](../client-access/)
+- [API reference](../../reference/api/)

@@ -1,0 +1,44 @@
+---
+title: Client access
+description: Reach the shared Poli Page client with PoliPage.client, built lazily from config.poli_page.
+---
+
+The gem keeps one SDK client for the whole process. `PoliPage.client` returns it from anywhere in your app: controllers, jobs, services and console.
+
+## PoliPage.client
+
+The first call validates `Rails.application.config.poli_page`, builds a `PoliPage::Client` from it and memoizes it. Every later call returns the same object. A `Monitor` guards the build, and the SDK documents its client as thread-safe, so sharing one instance across threads is correct.
+
+The client is the SDK's own object, so `PoliPage.client.render` and `PoliPage.client.documents` have every method the SDK documents. See the [SDK page](../../reference/sdk/).
+
+## When the client is built
+
+Nothing is built at boot. A missing `api_key` or an out-of-range option raises `PoliPage::Rails::ConfigurationError` on the first call, not when the app starts. Changing `config.poli_page` after that first call has no effect, because the client is already built.
+
+## Reset the client in tests
+
+`PoliPage.reset_client!` clears the memoized instance, so the next `PoliPage.client` builds a new one. It exists for specs that change the configuration: do not call it from application code. See [Testing](../../production/testing/).
+
+## Example
+
+```ruby
+# app/jobs/monthly_statement_job.rb
+class MonthlyStatementJob < ApplicationJob
+  def perform(account_id)
+    bytes = PoliPage.client.render.pdf(
+      project:  "billing",
+      template: "invoice",
+      data:     { invoiceNumber: "INV-001" }
+    )
+    Account.find(account_id).statement_pdf.attach(
+      io: StringIO.new(bytes), filename: "statement.pdf", content_type: "application/pdf"
+    )
+  end
+end
+```
+
+## See also
+
+- [Configuration](../configuration/)
+- [Responses](../responses/)
+- [Testing](../../production/testing/)

@@ -1,0 +1,18 @@
+---
+title: Poli Page Rails integration
+description: Render Poli Page documents from Rails controllers with poli_page-rails.
+template: splash
+hero:
+  tagline: Render Poli Page documents from Rails controllers.
+  actions:
+    - { text: Quick start, link: /rubyonrails/getting-started/quick-start/, icon: rocket }
+    - { text: API reference, link: /rubyonrails/reference/api/, icon: open-book }
+---
+
+import { CardGrid, Card } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <Card title="Quick start" icon="rocket">Install the gem and return a PDF from a controller action.</Card>
+  <Card title="Concepts" icon="puzzle">Configuration, the lazy client, PDF, preview and redirect responses.</Card>
+  <Card title="API reference" icon="open-book">Every public constant of `poli_page-rails`, on one page.</Card>
+</CardGrid>

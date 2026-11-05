@@ -5,8 +5,16 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   test:
+    # Required by the Codecov uploader (use_oidc: true) so it can mint a
+    # short-lived OIDC token instead of relying on a CODECOV_TOKEN secret.
+    permissions:
+      contents: read
+      id-token: write
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -31,6 +39,12 @@ jobs:
           BUNDLE_GEMFILE="gemfiles/rails_${{ matrix.rails }}.gemfile" bundle install --jobs 4 --retry 3
       - name: Lint
         run: bundle exec rubocop
+      - name: RBS validate
+        # The collection supplies the Rails and stdlib types that sig/ refers
+        # to; the lock file is generated, not committed.
+        run: |
+          bundle exec rbs collection install
+          bundle exec rbs -I sig validate
       - name: API contract
         id: contract
         uses: poli-page/api-contract@1f705b3ce3e15ff56e2f7b8249c1a2983af2312c # v0.13.0
@@ -41,6 +55,17 @@ jobs:
         env:
           POLI_CONTRACT: ${{ steps.contract.outputs.path }}
         run: bundle exec appraisal "rails-${{ matrix.rails }}" rspec --exclude-pattern "spec/integration/**/*"
+
+      - name: Upload coverage to Codecov
+        # Only upload once per CI run: the matrix would otherwise upload the
+        # same report 12 times. Tokenless: Codecov uses the GitHub OIDC token
+        # for public-repo uploads, so no CODECOV_TOKEN secret is required.
+        if: matrix.ruby == '3.4' && matrix.rails == '8.0'
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          files: ./coverage/lcov.info
+          use_oidc: true
+          fail_ci_if_error: false
 
   example-app:
     runs-on: ubuntu-latest

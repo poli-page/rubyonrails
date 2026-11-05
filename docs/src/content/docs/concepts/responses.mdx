@@ -1,0 +1,53 @@
+---
+title: Responses
+description: Send PDF bytes, an HTML preview or a redirect from a controller with the Renderable concern.
+---
+
+`PoliPage::Rails::Renderable` is a controller concern with three helpers: `render_pdf`, `render_preview` and `redirect_to_document`. Each one sets the headers that keep a rendered document out of shared caches.
+
+## PDF
+
+`render_pdf(bytes, filename: "document.pdf", inline: false)` sends raw PDF bytes through `send_data`, then sets the headers below.
+
+| Argument | Default | Description |
+| --- | --- | --- |
+| `bytes` | none | The PDF bytes, as the SDK's `render.pdf` returns them. |
+| `filename:` | `"document.pdf"` | The name in `Content-Disposition`. |
+| `inline:` | `false` | `true` shows the PDF in the browser, `false` downloads it. |
+
+The response carries `Content-Type: application/pdf`, `Cache-Control: private, no-store` and `X-Content-Type-Options: nosniff`. `Content-Disposition` is `attachment` or `inline` and is encoded to RFC 5987 and RFC 6266: an ASCII `filename` fallback plus a `filename*=UTF-8''…` form, so names such as `résumé.pdf` survive. Control characters, CR and LF included, are removed from the filename first.
+
+## Streamed PDF
+
+The gem has no streaming helper. To stream, include `ActionController::Live` in a dedicated controller and write the SDK's `render.pdf_stream` chunks to `response.stream`. Set the PDF headers on the first chunk, not before, so an error before the first byte still gets the JSON answer of the [default error handler](../../production/errors/). The example app's [`StreamsController`](https://github.com/poli-page/rubyonrails/blob/main/example-app/app/controllers/streams_controller.rb) shows the pattern.
+
+## HTML preview
+
+`render_preview(result)` renders the `html` of a `documents.preview` result as a complete document. If `result` has no `html` method, its `to_s` is used. The response is `text/html; charset=utf-8` with `Cache-Control: private, no-store` and `X-Content-Type-Options: nosniff`. It uses `render body:`, so layouts and template processing are skipped and `html_safe` is not needed.
+
+## Redirect to a stored document
+
+`redirect_to_document(descriptor, status: :found)` redirects to `descriptor.presigned_pdf_url`, the URL the SDK's `documents.get` returns for a stored document. It sets `Cache-Control: private, no-store` so intermediaries do not cache the redirect, and allows the other host the URL points to.
+
+## Example
+
+```ruby
+# app/controllers/documents_controller.rb
+class DocumentsController < ApplicationController
+  include PoliPage::Rails::Renderable
+
+  def show
+    redirect_to_document(PoliPage.client.documents.get(params[:id]))
+  end
+
+  def preview
+    render_preview(PoliPage.client.documents.preview(params[:id]))
+  end
+end
+```
+
+## See also
+
+- [Quick start](../../getting-started/quick-start/)
+- [Errors](../../production/errors/)
+- [API reference](../../reference/api/)

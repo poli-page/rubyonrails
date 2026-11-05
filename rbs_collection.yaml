@@ -1,0 +1,13 @@
+# Type sources for `rbs validate` (CI). sig/ ships Rails and SDK types by
+# reference only; the collection supplies the Rails and stdlib ones.
+sources:
+  - type: git
+    name: ruby/gem_rbs_collection
+    remote: https://github.com/ruby/gem_rbs_collection.git
+    revision: a2080c5762e4d22bf00ca0591eb4c8ec5d1fdd55 # pinned; bump deliberately
+    repo_dir: gems
+path: .gem_rbs_collection
+gems:
+  - name: activesupport
+  - name: actionpack
+  - name: railties
