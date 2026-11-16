@@ -6,7 +6,7 @@ name: release
 # key stored in CI. The publish job asserts the RubyGems.org account that owns
 # the gem (RUBYGEMS_OWNER_ID), which RubyGems.org requires to create a new gem.
 #
-#   git tag v0.13.0 && git push origin v0.13.0
+#   git tag v0.15.0 && git push origin v0.15.0
 #
 # The RubyGems Trusted Publisher record (rubygems.org) must name this file
 # (`release.yml`) and the repo `poli-page/rubyonrails`, with the Environment

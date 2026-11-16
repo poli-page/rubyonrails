@@ -6,10 +6,10 @@ Publishing (OIDC), so no API key is stored in the repository or in GitHub secret
 
 ## Versions
 
-`poli_page-rails` shares its major.minor with the Poli Page API: gem `0.13.x` talks to API `0.13`,
-passes the [API contract](https://github.com/poli-page/api-contract) `v0.13.0`, and requires the
-`poli-page` SDK of the same minor (`~> 0.13.0`, which RubyGems reads as `>= 0.13.0, < 0.14`; a
-bare `~> 0.13` would allow every later 0.x). Patch numbers are free: a fix to the gem alone is a
+`poli_page-rails` shares its major.minor with the Poli Page API: gem `0.15.x` talks to API `0.15`,
+passes the [API contract](https://github.com/poli-page/api-contract) `v0.15.0`, and requires the
+`poli-page` SDK of the same minor (`~> 0.15.0`, which RubyGems reads as `>= 0.15.0, < 0.16`; a
+bare `~> 0.15` would allow every later 0.x). Patch numbers are free: a fix to the gem alone is a
 patch, whatever the API's or the SDK's patch. A change of the API contract, a new feature, and a
 raise of the minimum Ruby or Rails version are each a minor. The gem may skip minors when it has
 nothing to ship for one. The release workflow refuses a tag whose major.minor differs from the
