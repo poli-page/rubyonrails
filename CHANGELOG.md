@@ -18,6 +18,13 @@ gem.
 - The API contract cases run against contract v0.15.0 (contract format 2).
   The `impl` cases the gem runs are unchanged from v0.13.0.
 
+### Removed
+
+- **Breaking:** `config.poli_page.user_agent`, deprecated in 0.13.1. It never
+  had an effect: the `poli-page` SDK sends its own `User-Agent` and takes no
+  option for it. An initializer that still sets it now fails at boot with
+  `NoMethodError`; delete the line.
+
 ## [0.13.1] - 2026-11-05
 
 ### Deprecated
