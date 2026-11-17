@@ -47,7 +47,7 @@ module PoliPage
         def read(file)
           contract = JSON.parse(File.read(file))
           version = contract["formatVersion"]
-          raise Invalid, "formatVersion #{version.inspect} is not supported (expected 1)" unless version == 1
+          raise Invalid, "formatVersion #{version.inspect} is not supported (expected 2)" unless version == 2
 
           contract.fetch("cases")
         end
