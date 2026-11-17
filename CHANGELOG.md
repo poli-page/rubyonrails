@@ -6,7 +6,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [0.15.0] - 2026-11-16
+## [0.15.0] - 2026-11-17
 
 Requires the `poli-page` SDK 0.15 (`~> 0.15.0`, that is `>= 0.15.0, < 0.16`)
 and passes the Poli Page API contract v0.15.0. There is no 0.14 release of the
