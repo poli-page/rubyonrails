@@ -36,7 +36,7 @@ This gem wires the official [`poli-page`](https://rubygems.org/gems/poli-page) R
 
 - Ruby 3.2 or newer
 - Rails 7.0, 7.1, 7.2, or 8.0
-- `poli-page` SDK 0.13.x (`~> 0.13.0`); Bundler installs it with the gem
+- `poli-page` SDK 0.15.x (`~> 0.15.0`); Bundler installs it with the gem
 
 ## Install
 
@@ -44,7 +44,7 @@ Add the gem to your `Gemfile`:
 
 ```ruby
 # Gemfile
-gem "poli_page-rails", "~> 0.13.0"
+gem "poli_page-rails", "~> 0.15.0"
 ```
 
 Then run:
@@ -230,6 +230,7 @@ bin/rails server
 
 | Gem | `poli-page` SDK | Rails | Ruby |
 |---|---|---|---|
+| 0.15.x | 0.15.x | 7.0 / 7.1 / 7.2 / 8.0 | 3.2 – 3.4 |
 | 0.13.x | 0.13.x | 7.0 / 7.1 / 7.2 / 8.0 | 3.2 – 3.4 |
 
 The gem shares its major.minor with the Poli Page API and requires the SDK of the same minor (see [RELEASING.md](RELEASING.md#versions)).

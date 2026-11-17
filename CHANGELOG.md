@@ -6,6 +6,25 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-11-17
+
+Requires the `poli-page` SDK 0.15 (`~> 0.15.0`, that is `>= 0.15.0, < 0.16`)
+and passes the Poli Page API contract v0.15.0. There is no 0.14 release of the
+gem.
+
+### Changed
+
+- Requires the `poli-page` SDK 0.15 (`~> 0.15.0`; was `~> 0.13.0`).
+- The API contract cases run against contract v0.15.0 (contract format 2).
+  The `impl` cases the gem runs are unchanged from v0.13.0.
+
+### Removed
+
+- **Breaking:** `config.poli_page.user_agent`, deprecated in 0.13.1. It never
+  had an effect: the `poli-page` SDK sends its own `User-Agent` and takes no
+  option for it. An initializer that still sets it now fails at boot with
+  `NoMethodError`; delete the line.
+
 ## [0.13.1] - 2026-11-05
 
 ### Deprecated
@@ -146,6 +165,7 @@ changes made during those lines.
 - Example app: the demo page's status row no longer shows the first 8
   characters of `POLI_PAGE_API_KEY`; no part of the key is shown.
 
-[Unreleased]: https://github.com/poli-page/rubyonrails/compare/v0.13.1...HEAD
+[Unreleased]: https://github.com/poli-page/rubyonrails/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/poli-page/rubyonrails/compare/v0.13.1...v0.15.0
 [0.13.1]: https://github.com/poli-page/rubyonrails/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/poli-page/rubyonrails/releases/tag/v0.13.0
